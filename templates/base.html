@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Logo{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-container">
+            <a href="{{ url_for('index') }}" class="logo">Logo</a>
+            <div class="search-container">
+                <form action="{{ url_for('search') }}" method="GET">
+                    <input type="text" name="q" class="search-bar" placeholder="Search products..." value="{{ request.args.get('q', '') }}">
+                </form>
+            </div>
+            <div class="header-actions">
+                <a href="{{ url_for('cart') }}" class="cart-btn">
+                    🛒 My Cart 
+                    {% if session.cart %}
+                        ({{ session.cart|length }})
+                    {% endif %}
+                </a>
+                <a href="{{ url_for('signup') }}" class="login-btn">👤 Login</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer (optional) -->
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2024 Logo. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

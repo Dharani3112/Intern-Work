@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Search Results - Logo{% endblock %}
+
+{% block content %}
+<h2 class="section-title">
+    {% if query %}
+        Search Results for "{{ query }}"
+    {% else %}
+        All Products
+    {% endif %}
+</h2>
+
+<div class="search-page">
+    <!-- Filters Sidebar -->
+    <div class="filters-sidebar">
+        <form action="{{ url_for('search') }}" method="GET">
+            <div class="filter-group">
+                <div class="filter-title">Search</div>
+                <input type="text" name="q" class="filter-input" placeholder="Search products..." value="{{ query }}">
+            </div>
+            
+            <div class="filter-group">
+                <div class="filter-title">Price Range</div>
+                <input type="number" name="min_price" class="filter-input" placeholder="Min price" value="{{ request.args.get('min_price', '') }}" step="0.01">
+                <input type="number" name="max_price" class="filter-input" placeholder="Max price" value="{{ request.args.get('max_price', '') }}" step="0.01">
+            </div>
+            
+            <div class="filter-group">
+                <div class="filter-title">Category</div>
+                <select name="category" class="filter-input">
+                    <option value="">All Categories</option>
+                    <option value="electronics" {% if request.args.get('category') == 'electronics' %}selected{% endif %}>Electronics</option>
+                    <option value="fashion" {% if request.args.get('category') == 'fashion' %}selected{% endif %}>Fashion</option>
+                    <option value="home-garden" {% if request.args.get('category') == 'home-garden' %}selected{% endif %}>Home & Garden</option>
+                    <option value="sports" {% if request.args.get('category') == 'sports' %}selected{% endif %}>Sports</option>
+                    <option value="books" {% if request.args.get('category') == 'books' %}selected{% endif %}>Books</option>
+                    <option value="health-beauty" {% if request.args.get('category') == 'health-beauty' %}selected{% endif %}>Health & Beauty</option>
+                </select>
+            </div>
+            
+            <button type="submit" class="filter-apply-btn">Apply Filters</button>
+        </form>
+    </div>
+
+    <!-- Search Results -->
+    <div class="search-results">
+        {% if products %}
+            {% for product in products %}
+            <div class="result-item">
+                <div class="result-image">Product Image</div>
+                <div class="result-info">
+                    <div class="result-title">{{ product.name }}</div>
+                    <div class="result-description">{{ product.description }}</div>
+                    <div class="result-price">${{ "%.2f"|format(product.price) }}</div>
+                    <div class="result-actions">
+                        <a href="{{ url_for('product', product_id=product.id) }}" class="view-product-btn">View Details</a>
+                        <a href="{{ url_for('add_to_cart', product_id=product.id) }}" class="add-to-cart-btn">Add to Cart</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="no-results">
+                <h3>No products found</h3>
+                <p>Try adjusting your search criteria or browse our categories.</p>
+                <a href="{{ url_for('index') }}" class="back-home-btn">Back to Home</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

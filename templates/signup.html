@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Sign Up - Logo{% endblock %}
+
+{% block content %}
+<h2 class="section-title">Create Your Account</h2>
+
+<div class="form-container">
+    <form action="{{ url_for('signup') }}" method="POST">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="first_name" class="form-label">First Name</label>
+                <input type="text" id="first_name" name="first_name" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label for="last_name" class="form-label">Last Name</label>
+                <input type="text" id="last_name" name="last_name" class="form-input" required>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="email" class="form-label">Email Address</label>
+            <input type="email" id="email" name="email" class="form-input" required>
+        </div>
+
+        <div class="form-group">
+            <label for="date_of_birth" class="form-label">Date of Birth</label>
+            <input type="date" id="date_of_birth" name="date_of_birth" class="form-input" required>
+        </div>
+
+        <div class="form-group">
+            <label for="mobile" class="form-label">Mobile Number</label>
+            <input type="tel" id="mobile" name="mobile" class="form-input" required>
+        </div>
+
+        <div class="form-group">
+            <label for="password" class="form-label">Password</label>
+            <input type="password" id="password" name="password" class="form-input" required minlength="8">
+        </div>
+
+        <div class="form-group">
+            <label for="confirm_password" class="form-label">Confirm Password</label>
+            <input type="password" id="confirm_password" name="confirm_password" class="form-input" required minlength="8">
+        </div>
+
+        <div class="form-group">
+            <label class="checkbox-label">
+                <input type="checkbox" name="terms" required>
+                I agree to the <a href="#" class="terms-link">Terms and Conditions</a>
+            </label>
+        </div>
+
+        <div class="form-group">
+            <label class="checkbox-label">
+                <input type="checkbox" name="newsletter">
+                Subscribe to our newsletter for special offers
+            </label>
+        </div>
+
+        <button type="submit" class="submit-btn">Create Account</button>
+    </form>
+
+    <div class="login-link">
+        <p>Already have an account? <a href="#" class="link">Sign in here</a></p>
+    </div>
+</div>
+
+<div class="signup-benefits">
+    <h3>Why Join Logo?</h3>
+    <div class="benefits-grid">
+        <div class="benefit-item">
+            <div class="benefit-icon">🚚</div>
+            <div class="benefit-text">
+                <h4>Free Shipping</h4>
+                <p>Free delivery on orders over $50</p>
+            </div>
+        </div>
+        <div class="benefit-item">
+            <div class="benefit-icon">🔒</div>
+            <div class="benefit-text">
+                <h4>Secure Shopping</h4>
+                <p>Your data is safe with us</p>
+            </div>
+        </div>
+        <div class="benefit-item">
+            <div class="benefit-icon">💝</div>
+            <div class="benefit-text">
+                <h4>Exclusive Offers</h4>
+                <p>Special deals for members</p>
+            </div>
+        </div>
+        <div class="benefit-item">
+            <div class="benefit-icon">↩️</div>
+            <div class="benefit-text">
+                <h4>Easy Returns</h4>
+                <p>30-day return policy</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
