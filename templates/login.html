@@ -1,100 +1,77 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - ShopEase</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-</head>
-<body>
-    <div class="container">
-        <header>
-            <div class="logo">
-                <a href="{{ url_for('index') }}">ShopEase</a>
-            </div>
-            <div class="search-bar">
-                <form action="{{ url_for('search') }}" method="GET">
-                    <input type="text" name="query" placeholder="Search products...">
-                    <button type="submit"><i class="fas fa-search"></i></button>
-                </form>
-            </div>
-            <nav>
-                <ul>
-                    <li><a href="{{ url_for('index') }}">Home</a></li>
-                    <li><a href="{{ url_for('cart') }}"><i class="fas fa-shopping-cart"></i> Cart</a></li>
-                    <li><a href="{{ url_for('signup') }}">Sign Up</a></li>
-                </ul>
-            </nav>
-        </header>
+{% extends "base.html" %}
 
-        <main class="auth-container">
-            <div class="auth-form">
-                <h2>Login to Your Account</h2>
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                        {% for category, message in messages %}
-                            <div class="alert alert-{{ category }}">{{ message }}</div>
-                        {% endfor %}
-                    {% endif %}
-                {% endwith %}
-                
-                <form action="{{ url_for('login') }}" method="POST">
-                    <div class="form-group">
-                        <label for="email">Email Address</label>
-                        <input type="email" id="email" name="email" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="password">Password</label>
-                        <input type="password" id="password" name="password" required>
-                    </div>
-                    
-                    <div class="form-group remember-me">
-                        <input type="checkbox" id="remember" name="remember">
-                        <label for="remember">Remember me</label>
-                    </div>
-                    
-                    <div class="form-group">
-                        <button type="submit" class="btn btn-primary">Login</button>
-                    </div>
-                    
-                    <div class="auth-links">
-                        <a href="{{ url_for('forgot_password') }}">Forgot Password?</a>
-                        <span>Don't have an account? <a href="{{ url_for('signup') }}">Sign Up</a></span>
-                    </div>
-                </form>
-            </div>
-        </main>
+{% block title %}Login - Logo{% endblock %}
 
-        <footer>
-            <div class="footer-content">
-                <div class="footer-section">
-                    <h3>About ShopEase</h3>
-                    <p>Your one-stop destination for all your shopping needs with the best deals and widest selection.</p>
-                </div>
-                <div class="footer-section">
-                    <h3>Customer Service</h3>
-                    <ul>
-                        <li><a href="#">Contact Us</a></li>
-                        <li><a href="#">FAQs</a></li>
-                        <li><a href="#">Shipping & Returns</a></li>
-                    </ul>
-                </div>
-                <div class="footer-section">
-                    <h3>Connect With Us</h3>
-                    <div class="social-icons">
-                        <a href="#"><i class="fab fa-facebook-f"></i></a>
-                        <a href="#"><i class="fab fa-twitter"></i></a>
-                        <a href="#"><i class="fab fa-instagram"></i></a>
-                    </div>
-                </div>
-            </div>
-            <div class="footer-bottom">
-                <p>&copy; 2025 ShopEase. All rights reserved.</p>
-            </div>
-        </footer>
+{% block content %}
+<h2 class="section-title">Login to Your Account</h2>
+
+<div class="form-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <form action="{{ url_for('login') }}" method="POST">
+        <div class="form-group">
+            <label for="email" class="form-label">Email Address</label>
+            <input type="email" id="email" name="email" class="form-input" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="password" class="form-label">Password</label>
+            <input type="password" id="password" name="password" class="form-input" required>
+        </div>
+        
+        <div class="form-group">
+            <label class="checkbox-label">
+                <input type="checkbox" id="remember" name="remember">
+                Remember me
+            </label>
+        </div>
+        
+        <button type="submit" class="submit-btn">Login</button>
+    </form>
+
+    <div class="login-link">
+        <p><a href="{{ url_for('forgot_password') }}" class="link">Forgot Password?</a></p>
+        <p>Don't have an account? <a href="{{ url_for('signup') }}" class="link">Sign up here</a></p>
     </div>
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
-</body>
-</html>
+</div>
+
+<div class="signup-benefits">
+    <h3>Why Shop With Logo?</h3>
+    <div class="benefits-grid">
+        <div class="benefit-item">
+            <div class="benefit-icon">🔐</div>
+            <div class="benefit-text">
+                <h4>Secure Login</h4>
+                <p>Your account is protected with advanced security</p>
+            </div>
+        </div>
+        <div class="benefit-item">
+            <div class="benefit-icon">🛒</div>
+            <div class="benefit-text">
+                <h4>Saved Cart</h4>
+                <p>Your items are saved across sessions</p>
+            </div>
+        </div>
+        <div class="benefit-item">
+            <div class="benefit-icon">📦</div>
+            <div class="benefit-text">
+                <h4>Order History</h4>
+                <p>Track all your past orders easily</p>
+            </div>
+        </div>
+        <div class="benefit-item">
+            <div class="benefit-icon">⚡</div>
+            <div class="benefit-text">
+                <h4>Fast Checkout</h4>
+                <p>Quick one-click purchase process</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
