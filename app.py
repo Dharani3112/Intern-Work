@@ -1,8 +1,95 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime, timezone
 import os
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-here'  # Change this to a random secret key
+
+# Database configuration
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://root:Dharani$1@localhost/shopping_site'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db = SQLAlchemy(app)
+
+# Database Models
+class User(db.Model):
+    __tablename__ = 'users'
+    user_id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(100), unique=True, nullable=False)
+    email = db.Column(db.String(150), unique=True, nullable=False)
+    password_hash = db.Column(db.Text, nullable=False)
+    first_name = db.Column(db.String(100))
+    last_name = db.Column(db.String(100))
+    mobile_number = db.Column(db.String(20))
+
+class Product(db.Model):
+    __tablename__ = 'products'
+    product_id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    specifications = db.Column(db.Text)
+    price = db.Column(db.Numeric(10, 2))
+    delivery_date = db.Column(db.Integer)
+    category = db.Column(db.String(100))
+    brand = db.Column(db.String(100))
+    rating_avg = db.Column(db.Float, default=0.0)
+    stock = db.Column(db.Integer, default=0)
+
+class ProductImage(db.Model):
+    __tablename__ = 'product_images'
+    image_id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.product_id'))
+    image_url = db.Column(db.Text)
+    is_main = db.Column(db.Boolean, default=False)
+
+class Review(db.Model):
+    __tablename__ = 'reviews'
+    review_id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.product_id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'))
+    rating = db.Column(db.Integer, nullable=False)
+    description = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+
+    __table_args__ = (
+        db.CheckConstraint('rating >= 1 AND rating <= 5', name='rating_range'),
+    )
+
+class CartItem(db.Model):
+    __tablename__ = 'cart_items'
+    cart_item_id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'))
+    product_id = db.Column(db.Integer, db.ForeignKey('products.product_id'))
+    quantity = db.Column(db.Integer, default=1)
+    added_at = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+
+class Order(db.Model):
+    __tablename__ = 'orders'
+    order_id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.product_id'), nullable=False)
+    quantity = db.Column(db.Integer, nullable=False)
+    price = db.Column(db.Numeric(10, 2), nullable=False)
+
+class Payment(db.Model):
+    __tablename__ = 'payments'
+    payment_id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(db.Integer, db.ForeignKey('orders.order_id'), nullable=False)
+    total_amount = db.Column(db.Numeric(10, 2), nullable=False)
+    payment_method = db.Column(db.String(50), nullable=False)
+
+class Address(db.Model):
+    __tablename__ = 'addresses'
+    address_id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
+    full_name = db.Column(db.String(150), nullable=False)
+    street_address = db.Column(db.String(200), nullable=False)
+    city = db.Column(db.String(100), nullable=False)
+    state = db.Column(db.String(100), nullable=False)
+    postal_code = db.Column(db.String(20), nullable=False)
+    country = db.Column(db.String(100), nullable=False)
 
 # Sample product data (in a real app, this would come from a database)
 products = [
@@ -42,6 +129,16 @@ products = [
         'image': 'yoga_mat.jpg'
     }
 ]
+
+# Create database tables
+def create_tables():
+    """Create database tables if they don't exist"""
+    try:
+        with app.app_context():
+            db.create_all()
+            print("Database tables created successfully!")
+    except Exception as e:
+        print(f"Error creating database tables: {e}")
 
 # Initialize cart in session if it doesn't exist
 def init_cart():
@@ -132,15 +229,54 @@ def cart():
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
-        # In a real app, you would save this data to a database
+        # Get form data
         first_name = request.form.get('first_name')
         last_name = request.form.get('last_name')
         email = request.form.get('email')
         password = request.form.get('password')
+        mobile = request.form.get('mobile')
+        date_of_birth = request.form.get('date_of_birth')
         
-        # Here you would typically hash the password and save to database
-        # For this demo, we'll just redirect to the shipping page
-        return redirect(url_for('shipping'))
+        # Check if user already exists
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            flash('Email address already exists. Please use a different email.', 'error')
+            return redirect(url_for('signup'))
+        
+        # Create username from email (you can modify this logic)
+        username = email.split('@')[0]
+        
+        # Check if username already exists
+        existing_username = User.query.filter_by(username=username).first()
+        if existing_username:
+            username = f"{username}_{User.query.count() + 1}"
+        
+        try:
+            # Hash password and create new user
+            password_hash = generate_password_hash(password)
+            new_user = User(
+                username=username,
+                email=email,
+                password_hash=password_hash,
+                first_name=first_name,
+                last_name=last_name,
+                mobile_number=mobile
+            )
+            
+            # Save to database
+            db.session.add(new_user)
+            db.session.commit()
+            
+            # Log in the user
+            session['user_id'] = new_user.user_id
+            flash('Account created successfully!', 'success')
+            
+            return redirect(url_for('index'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error creating account: {str(e)}', 'error')
+            return redirect(url_for('signup'))
     
     return render_template('signup.html')
 
