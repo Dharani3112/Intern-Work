@@ -541,6 +541,159 @@ def shipping():
 def forgot_password():
     return render_template('forgot_password.html')
 
+# ============================================================================
+# ADMIN ROUTES (Simple product management)
+# ============================================================================
+
+@app.route('/admin')
+@login_required
+def admin_dashboard():
+    """Simple admin dashboard for product management"""
+    current_user = get_current_user()
+    # For now, any logged-in user can access admin (in production, add role checking)
+    
+    products = Product.query.all()
+    products_data = []
+    for product in products:
+        products_data.append({
+            'id': product.product_id,
+            'name': product.name,
+            'description': product.description,
+            'price': float(product.price) if product.price else 0.0,
+            'stock': product.stock,
+            'category': product.category,
+            'brand': product.brand,
+            'image_url': get_main_image_url(product.product_id)
+        })
+    
+    return render_template('admin_dashboard.html', products=products_data)
+
+@app.route('/admin/product/add', methods=['GET', 'POST'])
+@login_required
+def admin_add_product():
+    """Add new product via web interface"""
+    if request.method == 'POST':
+        name = request.form.get('name')
+        description = request.form.get('description')
+        specifications = request.form.get('specifications')
+        price = request.form.get('price')
+        delivery_date = request.form.get('delivery_date')
+        category = request.form.get('category')
+        brand = request.form.get('brand')
+        stock = request.form.get('stock')
+        image_url = request.form.get('image_url')
+        
+        # Validation
+        if not name or not price:
+            flash('Product name and price are required.', 'error')
+            return render_template('admin_add_product.html')
+        
+        try:
+            price = float(price)
+            delivery_date = int(delivery_date) if delivery_date else 7
+            stock = int(stock) if stock else 0
+        except ValueError:
+            flash('Invalid price, delivery date, or stock format.', 'error')
+            return render_template('admin_add_product.html')
+        
+        # Create product
+        product = Product(
+            name=name,
+            description=description,
+            specifications=specifications,
+            price=price,
+            delivery_date=delivery_date,
+            category=category,
+            brand=brand,
+            stock=stock
+        )
+        
+        db.session.add(product)
+        db.session.flush()
+        
+        # Add image if provided
+        if image_url:
+            main_image = ProductImage(
+                product_id=product.product_id,
+                image_url=image_url,
+                is_main=True
+            )
+            db.session.add(main_image)
+        
+        db.session.commit()
+        flash(f'Product "{name}" added successfully!', 'success')
+        return redirect(url_for('admin_dashboard'))
+    
+    return render_template('admin_add_product.html')
+
+@app.route('/admin/product/edit/<int:product_id>', methods=['GET', 'POST'])
+@login_required
+def admin_edit_product(product_id):
+    """Edit existing product via web interface"""
+    product = Product.query.get(product_id)
+    if not product:
+        flash('Product not found.', 'error')
+        return redirect(url_for('admin_dashboard'))
+    
+    if request.method == 'POST':
+        product.name = request.form.get('name')
+        product.description = request.form.get('description')
+        product.specifications = request.form.get('specifications')
+        product.category = request.form.get('category')
+        product.brand = request.form.get('brand')
+        
+        try:
+            product.price = float(request.form.get('price'))
+            product.delivery_date = int(request.form.get('delivery_date', 7))
+            product.stock = int(request.form.get('stock', 0))
+        except ValueError:
+            flash('Invalid price, delivery date, or stock format.', 'error')
+            return render_template('admin_edit_product.html', product=product)
+        
+        # Update main image if provided
+        image_url = request.form.get('image_url')
+        if image_url:
+            main_image = ProductImage.query.filter_by(product_id=product_id, is_main=True).first()
+            if main_image:
+                main_image.image_url = image_url
+            else:
+                new_image = ProductImage(
+                    product_id=product_id,
+                    image_url=image_url,
+                    is_main=True
+                )
+                db.session.add(new_image)
+        
+        db.session.commit()
+        flash(f'Product "{product.name}" updated successfully!', 'success')
+        return redirect(url_for('admin_dashboard'))
+    
+    # Get current main image
+    main_image = ProductImage.query.filter_by(product_id=product_id, is_main=True).first()
+    current_image_url = main_image.image_url if main_image else ''
+    
+    return render_template('admin_edit_product.html', product=product, current_image_url=current_image_url)
+
+@app.route('/admin/product/delete/<int:product_id>')
+@login_required
+def admin_delete_product(product_id):
+    """Delete product via web interface"""
+    product = Product.query.get(product_id)
+    if not product:
+        flash('Product not found.', 'error')
+        return redirect(url_for('admin_dashboard'))
+    
+    product_name = product.name
+    
+    # Delete associated images first
+    ProductImage.query.filter_by(product_id=product_id).delete()
+    # Delete product
+    db.session.delete(product)
+    db.session.commit()
+    
+    flash(f'Product "{product_name}" deleted successfully!', 'success')
+    return redirect(url_for('admin_dashboard'))
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
