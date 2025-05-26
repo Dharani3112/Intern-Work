@@ -140,6 +140,12 @@ def create_tables():
     except Exception as e:
         print(f"Error creating database tables: {e}")
 
+# Context processor to inject current year into all templates
+@app.context_processor
+def inject_current_year():
+    """Make current year available to all templates"""
+    return {'current_year': datetime.now().year}
+
 # Initialize cart in session if it doesn't exist
 def init_cart():
     if 'cart' not in session:
