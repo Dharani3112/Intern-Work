@@ -267,6 +267,7 @@ def index():
             'name': product.name,
             'description': product.description,
             'price': float(product.price) if product.price else 0.0,
+            'stock': product.stock,
             'image_url': get_main_image_url(product.product_id)
         })
     
@@ -444,25 +445,38 @@ def add_to_cart(product_id):
         flash('Product not found.', 'error')
         return redirect(url_for('index'))
     
+    # Check stock availability
+    if product.stock <= 0:
+        flash(f'"{product.name}" is out of stock.', 'error')
+        return redirect(request.referrer or url_for('index'))
+    
     current_user = get_current_user()
     
     if current_user:
-        # Add to database cart
+        # Add to database cart with stock validation
         cart_item = CartItem.query.filter_by(user_id=current_user.user_id, product_id=product_id).first()
         if cart_item:
+            # Check if adding one more would exceed stock
+            if cart_item.quantity >= product.stock:
+                flash(f'Cannot add more "{product.name}". Only {product.stock} units available.', 'error')
+                return redirect(request.referrer or url_for('index'))
             cart_item.quantity += 1
         else:
             cart_item = CartItem(user_id=current_user.user_id, product_id=product_id, quantity=1)
             db.session.add(cart_item)
         db.session.commit()
     else:
-        # Add to session cart
+        # Add to session cart with stock validation
         if 'cart' not in session:
             session['cart'] = []
         
         # Check if product already in cart
         cart_item = next((item for item in session['cart'] if item['id'] == product_id), None)
         if cart_item:
+            # Check if adding one more would exceed stock
+            if cart_item['quantity'] >= product.stock:
+                flash(f'Cannot add more "{product.name}". Only {product.stock} units available.', 'error')
+                return redirect(request.referrer or url_for('index'))
             cart_item['quantity'] += 1
         else:
             session['cart'].append({
@@ -515,7 +529,6 @@ def cart():
 def shipping():
     current_user = get_current_user()
     cart_items = get_cart_items(current_user.user_id)
-    
     if not cart_items:
         flash('Your cart is empty.', 'error')
         return redirect(url_for('cart'))
@@ -532,17 +545,40 @@ def shipping():
             'payment_method': request.form.get('payment_method')
         }
         
-        # In a real app, you would:
-        # 1. Create an Order record
-        # 2. Process payment
-        # 3. Send confirmation email
+        # Check stock availability before processing order
+        stock_issues = []
+        for item in cart_items:
+            product = Product.query.get(item['id'])
+            if not product:
+                stock_issues.append(f"Product '{item['name']}' no longer exists.")
+            elif product.stock < item['quantity']:
+                stock_issues.append(f"Only {product.stock} units of '{item['name']}' available (you requested {item['quantity']}).")
         
-        # Clear cart after successful order
-        CartItem.query.filter_by(user_id=current_user.user_id).delete()
-        db.session.commit()
+        if stock_issues:
+            for issue in stock_issues:
+                flash(issue, 'error')
+            return redirect(url_for('cart'))
         
-        flash('Order placed successfully!', 'success')
-        return redirect(url_for('index'))
+        # Process stock reduction for each item
+        try:
+            for item in cart_items:
+                product = Product.query.get(item['id'])
+                if product:
+                    product.stock -= item['quantity']
+                    if product.stock < 0:
+                        product.stock = 0  # Prevent negative stock
+            
+            # Clear cart after successful order and stock update
+            CartItem.query.filter_by(user_id=current_user.user_id).delete()
+            db.session.commit()
+            
+            flash('Order placed successfully! Stock has been updated.', 'success')
+            return redirect(url_for('index'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash('Error processing order. Please try again.', 'error')
+            return redirect(url_for('cart'))
     
     subtotal, delivery_charge, total = calculate_cart_totals(cart_items)
     
