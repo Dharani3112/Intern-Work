@@ -10,10 +10,9 @@
     </div>
     <div class="product-detail-info">
         <h1 class="product-detail-title">{{ product.name }}</h1>
-        
-        <div class="product-detail-description">
+          <div class="product-detail-description">
             <div class="detail-section-title">Description</div>
-            <p>{{ product.description }}</p>
+            <p>{{ product.description or "No description available" }}</p>
         </div>
 
         <div class="delivery-info">

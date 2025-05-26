@@ -7,12 +7,13 @@
 <div class="categories-section">
     <h2 class="section-title">Shop by Category</h2>
     <div class="categories-container">
-        <a href="{{ url_for('search', category='electronics') }}" class="category-btn">Electronics</a>
-        <a href="{{ url_for('search', category='fashion') }}" class="category-btn">Fashion</a>
-        <a href="{{ url_for('search', category='home-garden') }}" class="category-btn">Home & Garden</a>
-        <a href="{{ url_for('search', category='sports') }}" class="category-btn">Sports</a>
-        <a href="{{ url_for('search', category='books') }}" class="category-btn">Books</a>
-        <a href="{{ url_for('search', category='health-beauty') }}" class="category-btn">Health & Beauty</a>
+        {% if categories %}
+            {% for category in categories %}
+            <a href="{{ url_for('search', category=category) }}" class="category-btn">{{ category }}</a>
+            {% endfor %}
+        {% else %}
+            <p style="text-align: center; color: #666; padding: 2rem;">No categories available yet. Add some products to see categories here!</p>
+        {% endif %}
     </div>
 </div>
 
@@ -23,9 +24,8 @@
     <div class="product-card">
         <div class="product-image">
             <img src="{{ product.image_url }}" alt="{{ product.name }}" style="max-width:100%; height:auto;"/>
-        </div>
-        <div class="product-title">{{ product.name }}</div>
-        <div class="product-description">{{ product.description[:100] }}{% if product.description|length > 100 %}...{% endif %}</div>
+        </div>        <div class="product-title">{{ product.name }}</div>
+        <div class="product-description">{{ (product.description or "No description available")[:100] }}{% if product.description and product.description|length > 100 %}...{% endif %}</div>
         <div class="product-footer">
             <div class="product-price">${{ "%.2f"|format(product.price) }}</div>
             <div class="product-actions">

@@ -258,7 +258,10 @@ def index():
             'image_url': get_main_image_url(product.product_id)
         })
     
-    return render_template('index.html', products=products_data)
+    # Get dynamic categories for homepage
+    categories = get_existing_categories()
+    
+    return render_template('index.html', products=products_data, categories=categories)
 
 @app.route('/search')
 def search():
@@ -542,6 +545,25 @@ def forgot_password():
     return render_template('forgot_password.html')
 
 # ============================================================================
+# ADMIN HELPER FUNCTIONS
+# ============================================================================
+
+def get_existing_categories():
+    """Fetch all unique categories from existing products"""
+    try:
+        categories = db.session.query(Product.category).filter(
+            Product.category.isnot(None),
+            Product.category != ''
+        ).distinct().order_by(Product.category).all()
+        
+        # Convert tuples to list of strings
+        category_list = [cat[0] for cat in categories if cat[0]]
+        return category_list
+    except Exception as e:
+        print(f"Error fetching categories: {e}")
+        return []
+
+# ============================================================================
 # ADMIN ROUTES (Simple product management)
 # ============================================================================
 
@@ -586,7 +608,8 @@ def admin_add_product():
         # Validation
         if not name or not price:
             flash('Product name and price are required.', 'error')
-            return render_template('admin_add_product.html')
+            categories = get_existing_categories()
+            return render_template('admin_add_product.html', categories=categories)
         
         try:
             price = float(price)
@@ -594,7 +617,8 @@ def admin_add_product():
             stock = int(stock) if stock else 0
         except ValueError:
             flash('Invalid price, delivery date, or stock format.', 'error')
-            return render_template('admin_add_product.html')
+            categories = get_existing_categories()
+            return render_template('admin_add_product.html', categories=categories)
         
         # Create product
         product = Product(
@@ -624,7 +648,9 @@ def admin_add_product():
         flash(f'Product "{name}" added successfully!', 'success')
         return redirect(url_for('admin_dashboard'))
     
-    return render_template('admin_add_product.html')
+    # GET request - fetch existing categories
+    categories = get_existing_categories()
+    return render_template('admin_add_product.html', categories=categories)
 
 @app.route('/admin/product/edit/<int:product_id>', methods=['GET', 'POST'])
 @login_required
@@ -648,7 +674,8 @@ def admin_edit_product(product_id):
             product.stock = int(request.form.get('stock', 0))
         except ValueError:
             flash('Invalid price, delivery date, or stock format.', 'error')
-            return render_template('admin_edit_product.html', product=product)
+            categories = get_existing_categories()
+            return render_template('admin_edit_product.html', product=product, categories=categories)
         
         # Update main image if provided
         image_url = request.form.get('image_url')
@@ -668,11 +695,12 @@ def admin_edit_product(product_id):
         flash(f'Product "{product.name}" updated successfully!', 'success')
         return redirect(url_for('admin_dashboard'))
     
-    # Get current main image
+    # Get current main image and categories
     main_image = ProductImage.query.filter_by(product_id=product_id, is_main=True).first()
     current_image_url = main_image.image_url if main_image else ''
+    categories = get_existing_categories()
     
-    return render_template('admin_edit_product.html', product=product, current_image_url=current_image_url)
+    return render_template('admin_edit_product.html', product=product, current_image_url=current_image_url, categories=categories)
 
 @app.route('/admin/product/delete/<int:product_id>')
 @login_required
@@ -693,6 +721,15 @@ def admin_delete_product(product_id):
     
     flash(f'Product "{product_name}" deleted successfully!', 'success')
     return redirect(url_for('admin_dashboard'))
+
+# ============================================================================
+# CONTEXT PROCESSORS
+# ============================================================================
+
+@app.context_processor
+def inject_current_year():
+    """Make current year available to all templates"""
+    return {'current_year': datetime.now().year}
 
 if __name__ == '__main__':
     with app.app_context():

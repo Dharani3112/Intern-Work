@@ -51,9 +51,8 @@
                 <div class="result-image">
                     <img src="{{ product.image_url }}" alt="{{ product.name }}" style="max-width:150px; height:auto;"/>
                 </div>
-                <div class="result-info">
-                    <div class="result-title">{{ product.name }}</div>
-                    <div class="result-description">{{ product.description }}</div>
+                <div class="result-info">                    <div class="result-title">{{ product.name }}</div>
+                    <div class="result-description">{{ product.description or "No description available" }}</div>
                     <div class="result-price">${{ "%.2f"|format(product.price) }}</div>
                     <div class="result-actions">
                         <a href="{{ url_for('product_detail', product_id=product.id) }}" class="view-product-btn">View Details</a>
