@@ -104,7 +104,7 @@
         <h3 class="summary-title">Order Summary</h3>
         
         <div class="summary-items">
-            {% for item in session.cart %}
+            {% for item in cart_items %}
             <div class="summary-item">
                 <div class="summary-item-info">
                     <div class="summary-item-name">{{ item.name }}</div>

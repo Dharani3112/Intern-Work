@@ -1,12 +1,15 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timezone
+from flask_bcrypt import Bcrypt
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://root:Dharani$1@localhost/shopping_site'
+# Using SQLite for testing instead of MySQL
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///shopping_site.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
+bcrypt = Bcrypt(app) 
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -17,6 +20,12 @@ class User(db.Model):
     first_name = db.Column(db.String(100))
     last_name = db.Column(db.String(100))
     mobile_number = db.Column(db.String(20))
+
+    def set_password(self, password):
+        self.password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
+
+    def check_password(self, password):
+        return bcrypt.check_password_hash(self.password_hash, password)
 
 class Product(db.Model):
     __tablename__ = 'products'

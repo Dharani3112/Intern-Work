@@ -11,7 +11,9 @@
         {% if cart_items %}
             {% for item in cart_items %}
             <div class="cart-item">
-                <div class="cart-item-image">Product Image</div>
+                <div class="cart-item-image">
+                    <img src="{{ item.image_url }}" alt="{{ item.name }}" style="max-width:100px; height:auto;"/>
+                </div>
                 <div class="cart-item-info">
                     <div class="cart-item-title">{{ item.name }}</div>
                     <div class="cart-item-description">{{ item.description }}</div>
@@ -20,7 +22,11 @@
                     <div class="cart-item-total">Total: ${{ "%.2f"|format(item.price * item.quantity) }}</div>
                 </div>
                 <div class="cart-item-actions">
-                    <a href="{{ url_for('remove_from_cart', product_id=item.id) }}" class="remove-btn">Remove</a>
+                    {% if session.user_id %}
+                        <a href="{{ url_for('remove_from_cart', item_id=item.cart_item_id) }}" class="remove-btn">Remove</a>
+                    {% else %}
+                        <a href="{{ url_for('remove_from_cart', item_id=item.id) }}" class="remove-btn">Remove</a>
+                    {% endif %}
                 </div>
             </div>
             {% endfor %}
@@ -60,7 +66,11 @@
         </div>
         
         <div class="checkout-actions">
-            <a href="{{ url_for('shipping') }}" class="checkout-btn">Proceed to Checkout</a>
+            {% if session.user_id %}
+                <a href="{{ url_for('shipping') }}" class="checkout-btn">Proceed to Checkout</a>
+            {% else %}
+                <a href="{{ url_for('web_login', next=url_for('shipping')) }}" class="checkout-btn">Login to Checkout</a>
+            {% endif %}
             <a href="{{ url_for('index') }}" class="continue-shopping-btn">Continue Shopping</a>
         </div>
         

@@ -5,7 +5,9 @@
 {% block content %}
 <!-- Product Details -->
 <div class="product-detail">
-    <div class="product-detail-image">Large Product Image</div>
+    <div class="product-detail-image">
+        <img src="{{ product.image_url }}" alt="{{ product.name }}" style="max-width:100%; height:auto;"/>
+    </div>
     <div class="product-detail-info">
         <h1 class="product-detail-title">{{ product.name }}</h1>
         
@@ -20,6 +22,12 @@
             <p>Free shipping on orders over $50</p>
         </div>
 
+        {% if product.specifications %}
+        <div class="specifications">
+            <div class="detail-section-title">Specifications</div>
+            <p>{{ product.specifications }}</p>
+        </div>
+        {% else %}
         <div class="specifications">
             <div class="detail-section-title">Specifications</div>
             <ul>
@@ -29,6 +37,7 @@
                 <li>1-year warranty included</li>
             </ul>
         </div>
+        {% endif %}
 
         <div class="product-actions">
             <div class="product-price-large">${{ "%.2f"|format(product.price) }}</div>
@@ -90,9 +99,12 @@
     <div class="individual-reviews">
         {% for review in reviews %}
         <div class="review-item">
-            <div class="review-rating">
-                {% for i in range(review.rating) %}★{% endfor %}
-                {% for i in range(5 - review.rating) %}☆{% endfor %}
+            <div class="review-header">
+                <div class="review-rating">
+                    {% for i in range(review.rating) %}★{% endfor %}
+                    {% for i in range(5 - review.rating) %}☆{% endfor %}
+                </div>
+                <div class="review-user">by {{ review.user }}</div>
             </div>
             <div class="review-text">{{ review.comment }}</div>
         </div>
