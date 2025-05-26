@@ -39,6 +39,18 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+def admin_required(f):
+    """Decorator for routes that require admin privileges - password-based access"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # Check if admin session is active
+        if not session.get('admin_authenticated'):
+            flash('Admin authentication required.', 'error')
+            return redirect(url_for('admin_login'))
+        
+        return f(*args, **kwargs)
+    return decorated_function
+
 def get_current_user():
     """Get current user from session"""
     if 'user_id' in session:
@@ -564,15 +576,38 @@ def get_existing_categories():
         return []
 
 # ============================================================================
-# ADMIN ROUTES (Simple product management)
+# ADMIN ROUTES (Password-based admin access)
 # ============================================================================
 
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    """Admin login with password authentication"""
+    if request.method == 'POST':
+        password = request.form.get('admin_password')
+          # Set your admin password here (change this to a secure password)
+        ADMIN_PASSWORD = "AdminSecure2025!"  # Secure admin password
+        
+        if password == ADMIN_PASSWORD:
+            session['admin_authenticated'] = True
+            flash('Admin login successful!', 'success')
+            return redirect(url_for('admin_dashboard'))
+        else:
+            flash('Invalid admin password.', 'error')
+    
+    return render_template('admin_login.html')
+
+@app.route('/admin/logout')
+def admin_logout():
+    """Admin logout"""
+    session.pop('admin_authenticated', None)
+    flash('Admin logged out successfully.', 'info')
+    return redirect(url_for('index'))
+
 @app.route('/admin')
-@login_required
+@admin_required
 def admin_dashboard():
-    """Simple admin dashboard for product management"""
+    """Admin dashboard for product management - password-based access"""
     current_user = get_current_user()
-    # For now, any logged-in user can access admin (in production, add role checking)
     
     products = Product.query.all()
     products_data = []
@@ -591,7 +626,7 @@ def admin_dashboard():
     return render_template('admin_dashboard.html', products=products_data)
 
 @app.route('/admin/product/add', methods=['GET', 'POST'])
-@login_required
+@admin_required
 def admin_add_product():
     """Add new product via web interface"""
     if request.method == 'POST':
@@ -653,7 +688,7 @@ def admin_add_product():
     return render_template('admin_add_product.html', categories=categories)
 
 @app.route('/admin/product/edit/<int:product_id>', methods=['GET', 'POST'])
-@login_required
+@admin_required
 def admin_edit_product(product_id):
     """Edit existing product via web interface"""
     product = Product.query.get(product_id)
@@ -703,7 +738,7 @@ def admin_edit_product(product_id):
     return render_template('admin_edit_product.html', product=product, current_image_url=current_image_url, categories=categories)
 
 @app.route('/admin/product/delete/<int:product_id>')
-@login_required
+@admin_required
 def admin_delete_product(product_id):
     """Delete product via web interface"""
     product = Product.query.get(product_id)
@@ -730,6 +765,11 @@ def admin_delete_product(product_id):
 def inject_current_year():
     """Make current year available to all templates"""
     return {'current_year': datetime.now().year}
+
+@app.context_processor
+def inject_current_user():
+    """Make current user available to all templates"""
+    return {'get_current_user': get_current_user}
 
 if __name__ == '__main__':
     with app.app_context():
