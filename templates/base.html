@@ -24,15 +24,9 @@
                     {% endif %}
                 </a>                {% if session.user_id %}
                     <span class="user-greeting">👤 {{ session.username }}</span>
-                    
-                    <!-- Admin link available to all users - redirects to admin login -->
-                    <a href="{{ url_for('admin_login') }}" class="admin-btn">⚙️ Admin</a>
-                    
                     <a href="{{ url_for('web_logout') }}" class="logout-btn">Logout</a>
                 {% else %}
                     <a href="{{ url_for('web_login') }}" class="login-btn">👤 Login</a>
-                    <!-- Admin link available to visitors too -->
-                    <a href="{{ url_for('admin_login') }}" class="admin-btn">⚙️ Admin</a>
                 {% endif %}
             </div>
         </div>
