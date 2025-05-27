@@ -46,10 +46,13 @@
     <!-- Search Results -->
     <div class="search-results">
         {% if products %}
-            {% for product in products %}
-            <div class="result-item">
+            {% for product in products %}            <div class="result-item">
                 <div class="result-image">
-                    <img src="{{ product.image_url }}" alt="{{ product.name }}" style="max-width:150px; height:auto;"/>
+                    {% if product.image_url %}
+                        <img src="{{ product.image_url }}" alt="{{ product.name }}" />
+                    {% else %}
+                        <div class="placeholder-text">No Image</div>
+                    {% endif %}
                 </div>
                 <div class="result-info">                    <div class="result-title">{{ product.name }}</div>
                     <div class="result-description">{{ product.description or "No description available" }}</div>

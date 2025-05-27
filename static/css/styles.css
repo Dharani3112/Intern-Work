@@ -277,6 +277,24 @@ body {
     color: #6c757d;
     font-size: 0.9rem;
     border: 2px dashed #ddd;
+    overflow: hidden;
+    position: relative;
+}
+
+.product-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+    border: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.product-image .placeholder-text {
+    z-index: 1;
+    text-align: center;
 }
 
 .product-title {
@@ -459,6 +477,24 @@ body {
     font-size: 0.8rem;
     flex-shrink: 0;
     border: 2px dashed #ddd;
+    overflow: hidden;
+    position: relative;
+}
+
+.result-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+    border: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.result-image .placeholder-text {
+    z-index: 1;
+    text-align: center;
 }
 
 .result-info {
@@ -541,6 +577,24 @@ body {
     flex-shrink: 0;
     border: 2px dashed #ddd;
     font-size: 1.1rem;
+    overflow: hidden;
+    position: relative;
+}
+
+.product-detail-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 13px;
+    border: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.product-detail-image .placeholder-text {
+    z-index: 1;
+    text-align: center;
 }
 
 .product-detail-info {
@@ -722,6 +776,24 @@ body {
     font-size: 0.8rem;
     flex-shrink: 0;
     border: 2px dashed #ddd;
+    overflow: hidden;
+    position: relative;
+}
+
+.cart-item-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+    border: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.cart-item-image .placeholder-text {
+    z-index: 1;
+    text-align: center;
 }
 
 .cart-item-info {
@@ -993,6 +1065,9 @@ body {
     max-height: 150px;
     border-radius: 8px;
     border: 1px solid #ddd;
+    object-fit: cover;
+    width: 100%;
+    height: auto;
 }
 
 /* Checkbox Styles */
@@ -1338,6 +1413,37 @@ body {
     border-radius: 10px;
 }
 
+/* General Image Overflow Prevention */
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Ensure all product images fit properly in containers */
+.product-card img,
+.cart-item img,
+.result-item img,
+.admin-dashboard img,
+.product-detail img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    border-radius: 8px !important;
+    border: none !important;
+}
+
+/* Override any inline styles that cause overflow */
+.product-image img,
+.cart-item-image img,
+.result-image img,
+.product-detail-image img {
+    max-width: none !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+}
+
 .action-btn-small {
     padding: 0.5rem 1rem;
     margin-left: 0.5rem;
@@ -1573,5 +1679,39 @@ a:focus, button:focus, input:focus, select:focus {
         box-shadow: none;
         border: 1px solid #ddd;
     }
+}
+
+/* Additional Image Handling for Edge Cases */
+.placeholder-text {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: #6c757d;
+    font-size: 0.9rem;
+    text-align: center;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+}
+
+/* Ensure broken images don't overflow */
+img[src=""], img:not([src]), img[src="None"] {
+    display: none;
+}
+
+/* Image loading states */
+img {
+    transition: opacity 0.3s ease;
+}
+
+img:not([complete]) {
+    opacity: 0.5;
+}
+
+/* Product card hover effects for images */
+.product-card:hover .product-image img {
+    transform: scale(1.05);
+    transition: transform 0.3s ease;
 }
 

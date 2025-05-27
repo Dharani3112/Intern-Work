@@ -6,7 +6,11 @@
 <!-- Product Details -->
 <div class="product-detail">
     <div class="product-detail-image">
-        <img src="{{ product.image_url }}" alt="{{ product.name }}" style="max-width:100%; height:auto;"/>
+        {% if product.image_url %}
+            <img src="{{ product.image_url }}" alt="{{ product.name }}" />
+        {% else %}
+            <div class="placeholder-text">No Image Available</div>
+        {% endif %}
     </div>
     <div class="product-detail-info">
         <h1 class="product-detail-title">{{ product.name }}</h1>

@@ -9,10 +9,13 @@
     <!-- Cart Items -->
     <div class="cart-items">
         {% if cart_items %}
-            {% for item in cart_items %}
-            <div class="cart-item">
+            {% for item in cart_items %}            <div class="cart-item">
                 <div class="cart-item-image">
-                    <img src="{{ item.image_url }}" alt="{{ item.name }}" style="max-width:100px; height:auto;"/>
+                    {% if item.image_url %}
+                        <img src="{{ item.image_url }}" alt="{{ item.name }}" />
+                    {% else %}
+                        <div class="placeholder-text">No Image</div>
+                    {% endif %}
                 </div>
                 <div class="cart-item-info">
                     <div class="cart-item-title">{{ item.name }}</div>
