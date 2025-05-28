@@ -319,10 +319,12 @@ def product_detail(product_id):
     
     # Get product images
     images = ProductImage.query.filter_by(product_id=product_id).all()
-    
-    # Get reviews
+      # Get reviews
     reviews = Review.query.filter_by(product_id=product_id).all()
     reviews_data = []
+    rating_counts = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+    total_rating = 0
+    
     for review in reviews:
         user = User.query.get(review.user_id)
         reviews_data.append({
@@ -331,6 +333,17 @@ def product_detail(product_id):
             'user': user.username if user else 'Anonymous',
             'created_at': review.created_at
         })
+        rating_counts[review.rating] += 1
+        total_rating += review.rating
+    
+    # Calculate rating statistics
+    total_reviews = len(reviews)
+    avg_rating = round(total_rating / total_reviews, 1) if total_reviews > 0 else 0
+    
+    # Calculate percentages for rating bars
+    rating_percentages = {}
+    for rating in range(1, 6):
+        rating_percentages[rating] = round((rating_counts[rating] / total_reviews) * 100) if total_reviews > 0 else 0
     
     product_data = {
         'id': product.product_id,
@@ -341,7 +354,13 @@ def product_detail(product_id):
         'image_url': get_main_image_url(product.product_id)
     }
     
-    return render_template('product.html', product=product_data, reviews=reviews_data)
+    rating_data = {
+        'avg_rating': avg_rating,
+        'total_reviews': total_reviews,
+        'rating_percentages': rating_percentages
+    }
+    
+    return render_template('product.html', product=product_data, reviews=reviews_data, rating_data=rating_data)
 
 @app.route('/signup', methods=['GET', 'POST'])
 def web_signup():

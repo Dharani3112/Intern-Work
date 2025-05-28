@@ -52,83 +52,80 @@
 <!-- Reviews Section -->
 <div class="reviews-section">
     <h3 class="section-title">Ratings & Reviews</h3>
-    
-    <div class="ratings-overview">
+      <div class="ratings-overview">
         <div class="rating-summary">
-            <div class="average-rating">4.2</div>
-            <div class="rating-stars">★★★★☆</div>
-            <div class="total-reviews">Based on {{ reviews|length }} reviews</div>
+            <div class="average-rating">{{ rating_data.avg_rating if rating_data.total_reviews > 0 else "No ratings" }}</div>
+            <div class="rating-stars">
+                {% if rating_data.total_reviews > 0 %}
+                    {% for i in range((rating_data.avg_rating)|round|int) %}★{% endfor %}
+                    {% for i in range(5 - (rating_data.avg_rating)|round|int) %}☆{% endfor %}
+                {% else %}
+                    ☆☆☆☆☆
+                {% endif %}
+            </div>
+            <div class="total-reviews">Based on {{ rating_data.total_reviews }} review{{ 's' if rating_data.total_reviews != 1 else '' }}</div>
         </div>
         
+        {% if rating_data.total_reviews > 0 %}
         <div class="rating-bars">
             <div class="rating-bar">
                 <span>5★</span>
                 <div class="rating-progress">
-                    <div class="rating-fill" style="width: 60%"></div>
+                    <div class="rating-fill" style="width: {{ rating_data.rating_percentages[5] }}%"></div>
                 </div>
-                <span>60%</span>
+                <span>{{ rating_data.rating_percentages[5] }}%</span>
             </div>
             <div class="rating-bar">
                 <span>4★</span>
                 <div class="rating-progress">
-                    <div class="rating-fill" style="width: 25%"></div>
+                    <div class="rating-fill" style="width: {{ rating_data.rating_percentages[4] }}%"></div>
                 </div>
-                <span>25%</span>
+                <span>{{ rating_data.rating_percentages[4] }}%</span>
             </div>
             <div class="rating-bar">
                 <span>3★</span>
                 <div class="rating-progress">
-                    <div class="rating-fill" style="width: 10%"></div>
+                    <div class="rating-fill" style="width: {{ rating_data.rating_percentages[3] }}%"></div>
                 </div>
-                <span>10%</span>
+                <span>{{ rating_data.rating_percentages[3] }}%</span>
             </div>
             <div class="rating-bar">
                 <span>2★</span>
                 <div class="rating-progress">
-                    <div class="rating-fill" style="width: 3%"></div>
+                    <div class="rating-fill" style="width: {{ rating_data.rating_percentages[2] }}%"></div>
                 </div>
-                <span>3%</span>
+                <span>{{ rating_data.rating_percentages[2] }}%</span>
             </div>
             <div class="rating-bar">
                 <span>1★</span>
                 <div class="rating-progress">
-                    <div class="rating-fill" style="width: 2%"></div>
+                    <div class="rating-fill" style="width: {{ rating_data.rating_percentages[1] }}%"></div>
                 </div>
-                <span>2%</span>
+                <span>{{ rating_data.rating_percentages[1] }}%</span>
             </div>
         </div>
+        {% endif %}
     </div>
 
     <div class="individual-reviews">
-        {% for review in reviews %}
-        <div class="review-item">
-            <div class="review-header">
-                <div class="review-rating">
-                    {% for i in range(review.rating) %}★{% endfor %}
-                    {% for i in range(5 - review.rating) %}☆{% endfor %}
+        {% if reviews %}
+            {% for review in reviews %}
+            <div class="review-item">
+                <div class="review-header">
+                    <div class="review-rating">
+                        {% for i in range(review.rating) %}★{% endfor %}
+                        {% for i in range(5 - review.rating) %}☆{% endfor %}
+                    </div>
+                    <div class="review-user">by {{ review.user }}</div>
                 </div>
-                <div class="review-user">by {{ review.user }}</div>
+                <div class="review-text">{{ review.comment }}</div>
             </div>
-            <div class="review-text">{{ review.comment }}</div>
-        </div>
-        {% endfor %}
-    </div>
-</div>
-
-<!-- Related Products -->
-<div class="related-products">
-    <h3 class="section-title">You Might Also Like</h3>
-    <div class="products-grid">
-        <!-- This would typically show related products from the database -->
-        <div class="product-card">
-            <div class="product-image">Related Product</div>
-            <div class="product-title">Similar Product</div>
-            <div class="product-description">Another great product you might be interested in.</div>
-            <div class="product-footer">
-                <div class="product-price">$89.99</div>
-                <a href="#" class="add-to-cart-btn">Add to Cart</a>
+            {% endfor %}
+        {% else %}
+            <div class="no-reviews">
+                <p>No reviews yet. Be the first to review this product!</p>
             </div>
-        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
