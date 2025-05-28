@@ -17,11 +17,13 @@
           <div class="product-detail-description">
             <div class="detail-section-title">Description</div>
             <p>{{ product.description or "No description available" }}</p>
-        </div>
-
-        <div class="delivery-info">
+        </div>        <div class="delivery-info">
             <div class="detail-section-title">Delivery Information</div>
-            <p>Expected delivery: 3-5 business days</p>
+            {% if product.delivery_date %}
+                <p>Expected delivery: {{ product.delivery_date }} business day{{ 's' if product.delivery_date != 1 else '' }}</p>
+            {% else %}
+                <p>Expected delivery: 3-5 business days</p>
+            {% endif %}
             <p>Free shipping on orders over $50</p>
         </div>
 
@@ -104,19 +106,57 @@
                 <span>{{ rating_data.rating_percentages[1] }}%</span>
             </div>
         </div>
+        {% endif %}    </div>
+
+    <!-- Add Review Form -->
+    {% if current_user %}
+        {% if not user_has_reviewed %}
+        <div class="add-review-section">
+            <h4 class="review-form-title">Have used this product? Give a review about it</h4>
+            <form action="{{ url_for('add_review', product_id=product.id) }}" method="POST" class="review-form">
+                <div class="rating-input">
+                    <label>Your Rating:</label>
+                    <div class="star-rating">
+                        <input type="radio" name="rating" value="5" id="star5">
+                        <label for="star5" title="5 stars">★</label>
+                        <input type="radio" name="rating" value="4" id="star4">
+                        <label for="star4" title="4 stars">★</label>
+                        <input type="radio" name="rating" value="3" id="star3">
+                        <label for="star3" title="3 stars">★</label>
+                        <input type="radio" name="rating" value="2" id="star2">
+                        <label for="star2" title="2 stars">★</label>
+                        <input type="radio" name="rating" value="1" id="star1">
+                        <label for="star1" title="1 star">★</label>
+                    </div>
+                </div>
+                <div class="comment-input">
+                    <label for="comment">Your Review:</label>
+                    <textarea name="comment" id="comment" placeholder="Share your experience with this product..." required></textarea>
+                </div>
+                <button type="submit" class="submit-review-btn">Submit Review</button>
+            </form>
+        </div>
+        {% else %}
+        <div class="already-reviewed">
+            <p>✓ You have already reviewed this product.</p>
+        </div>
         {% endif %}
+    {% else %}
+    <div class="login-to-review">
+        <p>Please <a href="{{ url_for('web_login') }}">login</a> to write a review.</p>
     </div>
+    {% endif %}
 
     <div class="individual-reviews">
         {% if reviews %}
-            {% for review in reviews %}
-            <div class="review-item">
+            {% for review in reviews %}            <div class="review-item">
                 <div class="review-header">
                     <div class="review-rating">
                         {% for i in range(review.rating) %}★{% endfor %}
                         {% for i in range(5 - review.rating) %}☆{% endfor %}
                     </div>
                     <div class="review-user">by {{ review.user }}</div>
+                    <div class="review-date">{{ review.created_at.strftime('%B %d, %Y') if review.created_at else '' }}</div>
                 </div>
                 <div class="review-text">{{ review.comment }}</div>
             </div>

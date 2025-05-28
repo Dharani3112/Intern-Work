@@ -317,6 +317,18 @@ def product_detail(product_id):
         flash('Product not found.', 'error')
         return redirect(url_for('index'))
     
+    # Get current user
+    current_user = get_current_user()
+    
+    # Check if current user has already reviewed this product
+    user_has_reviewed = False
+    if current_user:
+        existing_review = Review.query.filter_by(
+            user_id=current_user.user_id, 
+            product_id=product_id
+        ).first()
+        user_has_reviewed = existing_review is not None
+    
     # Get product images
     images = ProductImage.query.filter_by(product_id=product_id).all()
       # Get reviews
@@ -339,8 +351,7 @@ def product_detail(product_id):
     # Calculate rating statistics
     total_reviews = len(reviews)
     avg_rating = round(total_rating / total_reviews, 1) if total_reviews > 0 else 0
-    
-    # Calculate percentages for rating bars
+      # Calculate percentages for rating bars
     rating_percentages = {}
     for rating in range(1, 6):
         rating_percentages[rating] = round((rating_counts[rating] / total_reviews) * 100) if total_reviews > 0 else 0
@@ -351,6 +362,7 @@ def product_detail(product_id):
         'description': product.description,
         'specifications': product.specifications,
         'price': float(product.price) if product.price else 0.0,
+        'delivery_date': product.delivery_date,
         'image_url': get_main_image_url(product.product_id)
     }
     
@@ -360,7 +372,12 @@ def product_detail(product_id):
         'rating_percentages': rating_percentages
     }
     
-    return render_template('product.html', product=product_data, reviews=reviews_data, rating_data=rating_data)
+    return render_template('product.html', 
+                         product=product_data, 
+                         reviews=reviews_data, 
+                         rating_data=rating_data,
+                         current_user=current_user,
+                         user_has_reviewed=user_has_reviewed)
 
 @app.route('/signup', methods=['GET', 'POST'])
 def web_signup():
@@ -825,6 +842,68 @@ def inject_current_year():
 def inject_current_user():
     """Make current user available to all templates"""
     return {'get_current_user': get_current_user}
+
+@app.route('/product/<int:product_id>/review', methods=['POST'])
+@login_required
+def add_review(product_id):
+    """Add a review for a product"""
+    product = Product.query.get(product_id)
+    if not product:
+        flash('Product not found.', 'error')
+        return redirect(url_for('index'))
+    
+    current_user = get_current_user()
+    
+    # Check if user has already reviewed this product
+    existing_review = Review.query.filter_by(
+        user_id=current_user.user_id, 
+        product_id=product_id
+    ).first()
+    
+    if existing_review:
+        flash('You have already reviewed this product.', 'error')
+        return redirect(url_for('product_detail', product_id=product_id))
+    
+    # Get form data
+    rating = request.form.get('rating')
+    comment = request.form.get('comment', '').strip()
+    
+    # Validation
+    if not rating:
+        flash('Please select a rating.', 'error')
+        return redirect(url_for('product_detail', product_id=product_id))
+    
+    try:
+        rating = int(rating)
+        if rating < 1 or rating > 5:
+            raise ValueError("Rating must be between 1 and 5")
+    except ValueError:
+        flash('Invalid rating. Please select a rating between 1 and 5 stars.', 'error')
+        return redirect(url_for('product_detail', product_id=product_id))
+    
+    if not comment:
+        flash('Please provide a review comment.', 'error')
+        return redirect(url_for('product_detail', product_id=product_id))
+    
+    # Create new review
+    new_review = Review(
+        user_id=current_user.user_id,
+        product_id=product_id,
+        rating=rating,
+        description=comment,
+        created_at=datetime.now()
+    )
+    
+    try:
+        db.session.add(new_review)
+        db.session.commit()
+        flash('Thank you for your review! It has been added successfully.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Error adding review. Please try again.', 'error')
+        print(f"Error adding review: {e}")
+    
+    return redirect(url_for('product_detail', product_id=product_id))
 
 if __name__ == '__main__':
     with app.app_context():
