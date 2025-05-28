@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template, redirect, url_for, session, flash
+from flask import Flask, request, jsonify, render_template, redirect, url_for, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import create_access_token, jwt_required, JWTManager, get_jwt_identity
 from flask_bcrypt import Bcrypt
@@ -34,7 +34,6 @@ def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
-            flash('Please log in to access this page.', 'error')
             return redirect(url_for('web_login'))
         return f(*args, **kwargs)
     return decorated_function
@@ -45,7 +44,6 @@ def admin_required(f):
     def decorated_function(*args, **kwargs):
         # Check if admin session is active
         if not session.get('admin_authenticated'):
-            flash('Admin authentication required.', 'error')
             return redirect(url_for('admin_login'))
         
         return f(*args, **kwargs)
@@ -317,7 +315,6 @@ def search():
 def product_detail(product_id):
     product = Product.query.get(product_id)
     if not product:
-        flash('Product not found.', 'error')
         return redirect(url_for('index'))
     
     # Get current user
@@ -395,15 +392,12 @@ def web_signup():
         
         # Validation
         if not username or not email or not password:
-            flash('Username, email, and password are required.', 'error')
             return render_template('signup.html')
         
         if password != confirm_password:
-            flash('Passwords do not match.', 'error')
             return render_template('signup.html')
         
         if User.query.filter_by(email=email).first() or User.query.filter_by(username=username).first():
-            flash('User already exists with this email or username.', 'error')
             return render_template('signup.html')
         
         # Create new user
@@ -418,7 +412,6 @@ def web_signup():
         db.session.add(new_user)
         db.session.commit()
         
-        flash('Account created successfully! Please log in.', 'success')
         return redirect(url_for('web_login'))
     
     return render_template('signup.html')
@@ -431,13 +424,11 @@ def web_login():
         remember = True if request.form.get('remember') else False
         
         if not email or not password:
-            flash('Email and password are required.', 'error')
             return render_template('login.html')
         
         user = User.query.filter_by(email=email).first()
         
         if not user or not user.check_password(password):
-            flash('Invalid email or password.', 'error')
             return render_template('login.html')
         
         # Log in user
@@ -465,7 +456,6 @@ def web_login():
             db.session.commit()
             session.pop('cart', None)  # Clear session cart
         
-        flash('Login successful!', 'success')
         next_page = request.args.get('next')
         return redirect(next_page) if next_page else redirect(url_for('index'))
     
@@ -474,30 +464,25 @@ def web_login():
 @app.route('/logout')
 def web_logout():
     session.clear()
-    flash('You have been logged out.', 'info')
     return redirect(url_for('index'))
 
 @app.route('/add_to_cart/<int:product_id>')
 def add_to_cart(product_id):
     product = Product.query.get(product_id)
     if not product:
-        flash('Product not found.', 'error')
         return redirect(url_for('index'))
     
     # Check stock availability
     if product.stock <= 0:
-        flash(f'"{product.name}" is out of stock.', 'error')
         return redirect(request.referrer or url_for('index'))
     
     current_user = get_current_user()
     
-    if current_user:
-        # Add to database cart with stock validation
+    if current_user:        # Add to database cart with stock validation
         cart_item = CartItem.query.filter_by(user_id=current_user.user_id, product_id=product_id).first()
         if cart_item:
             # Check if adding one more would exceed stock
             if cart_item.quantity >= product.stock:
-                flash(f'Cannot add more "{product.name}". Only {product.stock} units available.', 'error')
                 return redirect(request.referrer or url_for('index'))
             cart_item.quantity += 1
         else:
@@ -508,17 +493,14 @@ def add_to_cart(product_id):
         # Add to session cart with stock validation
         if 'cart' not in session:
             session['cart'] = []
-        
-        # Check if product already in cart
+          # Check if product already in cart
         cart_item = next((item for item in session['cart'] if item['id'] == product_id), None)
         if cart_item:
             # Check if adding one more would exceed stock
             if cart_item['quantity'] >= product.stock:
-                flash(f'Cannot add more "{product.name}". Only {product.stock} units available.', 'error')
                 return redirect(request.referrer or url_for('index'))
             cart_item['quantity'] += 1
-        else:
-            session['cart'].append({
+        else:            session['cart'].append({
                 'id': product_id,
                 'name': product.name,
                 'description': product.description,
@@ -528,26 +510,22 @@ def add_to_cart(product_id):
             })
         session.modified = True
     
-    flash('Product added to cart!', 'success')
     return redirect(request.referrer or url_for('index'))
 
 @app.route('/remove_from_cart/<int:item_id>')
 def remove_from_cart(item_id):
     current_user = get_current_user()
     
-    if current_user:
-        # Remove from database cart
+    if current_user:        # Remove from database cart
         cart_item = CartItem.query.filter_by(cart_item_id=item_id, user_id=current_user.user_id).first()
         if cart_item:
             db.session.delete(cart_item)
             db.session.commit()
-            flash('Item removed from cart.', 'success')
     else:
         # Remove from session cart (item_id is actually product_id for session)
         if 'cart' in session:
             session['cart'] = [item for item in session['cart'] if item['id'] != item_id]
             session.modified = True
-            flash('Item removed from cart.', 'success')
     
     return redirect(url_for('cart'))
 
@@ -569,7 +547,6 @@ def shipping():
     current_user = get_current_user()
     cart_items = get_cart_items(current_user.user_id)
     if not cart_items:
-        flash('Your cart is empty.', 'error')
         return redirect(url_for('cart'))
     
     if request.method == 'POST':
@@ -594,8 +571,6 @@ def shipping():
                 stock_issues.append(f"Only {product.stock} units of '{item['name']}' available (you requested {item['quantity']}).")
         
         if stock_issues:
-            for issue in stock_issues:
-                flash(issue, 'error')
             return redirect(url_for('cart'))
         
         # Process stock reduction for each item
@@ -611,12 +586,10 @@ def shipping():
             CartItem.query.filter_by(user_id=current_user.user_id).delete()
             db.session.commit()
             
-            flash('Order placed successfully! Stock has been updated.', 'success')
             return redirect(url_for('index'))
             
         except Exception as e:
             db.session.rollback()
-            flash('Error processing order. Please try again.', 'error')
             return redirect(url_for('cart'))
     
     subtotal, delivery_charge, total = calculate_cart_totals(cart_items)
@@ -659,15 +632,15 @@ def admin_login():
     """Admin login with password authentication"""
     if request.method == 'POST':
         password = request.form.get('admin_password')
-          # Set your admin password here (change this to a secure password)
+        
+        # Set your admin password here (change this to a secure password)
         ADMIN_PASSWORD = "AdminSecure2025!"  # Secure admin password
         
         if password == ADMIN_PASSWORD:
             session['admin_authenticated'] = True
-            flash('Admin login successful!', 'success')
             return redirect(url_for('admin_dashboard'))
         else:
-            flash('Invalid admin password.', 'error')
+            return render_template('admin_login.html')
     
     return render_template('admin_login.html')
 
@@ -675,7 +648,6 @@ def admin_login():
 def admin_logout():
     """Admin logout"""
     session.pop('admin_authenticated', None)
-    flash('Admin logged out successfully.', 'info')
     return redirect(url_for('index'))
 
 @app.route('/admin')
@@ -717,7 +689,6 @@ def admin_add_product():
         
         # Validation
         if not name or not price:
-            flash('Product name and price are required.', 'error')
             categories = get_existing_categories()
             return render_template('admin_add_product.html', categories=categories)
         
@@ -726,7 +697,6 @@ def admin_add_product():
             delivery_date = int(delivery_date) if delivery_date else 7
             stock = int(stock) if stock else 0
         except ValueError:
-            flash('Invalid price, delivery date, or stock format.', 'error')
             categories = get_existing_categories()
             return render_template('admin_add_product.html', categories=categories)
         
@@ -755,7 +725,6 @@ def admin_add_product():
             db.session.add(main_image)
         
         db.session.commit()
-        flash(f'Product "{name}" added successfully!', 'success')
         return redirect(url_for('admin_dashboard'))
     
     # GET request - fetch existing categories
@@ -768,7 +737,6 @@ def admin_edit_product(product_id):
     """Edit existing product via web interface"""
     product = Product.query.get(product_id)
     if not product:
-        flash('Product not found.', 'error')
         return redirect(url_for('admin_dashboard'))
     
     if request.method == 'POST':
@@ -783,7 +751,6 @@ def admin_edit_product(product_id):
             product.delivery_date = int(request.form.get('delivery_date', 7))
             product.stock = int(request.form.get('stock', 0))
         except ValueError:
-            flash('Invalid price, delivery date, or stock format.', 'error')
             categories = get_existing_categories()
             return render_template('admin_edit_product.html', product=product, categories=categories)
         
@@ -802,7 +769,6 @@ def admin_edit_product(product_id):
                 db.session.add(new_image)
         
         db.session.commit()
-        flash(f'Product "{product.name}" updated successfully!', 'success')
         return redirect(url_for('admin_dashboard'))
     
     # Get current main image and categories
@@ -818,7 +784,6 @@ def admin_delete_product(product_id):
     """Delete product via web interface"""
     product = Product.query.get(product_id)
     if not product:
-        flash('Product not found.', 'error')
         return redirect(url_for('admin_dashboard'))
     
     product_name = product.name
@@ -829,7 +794,6 @@ def admin_delete_product(product_id):
     db.session.delete(product)
     db.session.commit()
     
-    flash(f'Product "{product_name}" deleted successfully!', 'success')
     return redirect(url_for('admin_dashboard'))
 
 # ============================================================================
@@ -852,7 +816,6 @@ def add_review(product_id):
     """Add a review for a product"""
     product = Product.query.get(product_id)
     if not product:
-        flash('Product not found.', 'error')
         return redirect(url_for('index'))
     
     current_user = get_current_user()
@@ -864,7 +827,6 @@ def add_review(product_id):
     ).first()
     
     if existing_review:
-        flash('You have already reviewed this product.', 'error')
         return redirect(url_for('product_detail', product_id=product_id))
     
     # Get form data
@@ -873,7 +835,6 @@ def add_review(product_id):
     
     # Validation
     if not rating:
-        flash('Please select a rating.', 'error')
         return redirect(url_for('product_detail', product_id=product_id))
     
     try:
@@ -881,11 +842,9 @@ def add_review(product_id):
         if rating < 1 or rating > 5:
             raise ValueError("Rating must be between 1 and 5")
     except ValueError:
-        flash('Invalid rating. Please select a rating between 1 and 5 stars.', 'error')
         return redirect(url_for('product_detail', product_id=product_id))
     
     if not comment:
-        flash('Please provide a review comment.', 'error')
         return redirect(url_for('product_detail', product_id=product_id))
     
     # Create new review
@@ -900,10 +859,8 @@ def add_review(product_id):
     try:
         db.session.add(new_review)
         db.session.commit()
-        flash('Thank you for your review! It has been added successfully.', 'success')
     except Exception as e:
         db.session.rollback()
-        flash('Error adding review. Please try again.', 'error')
         print(f"Error adding review: {e}")
     
     return redirect(url_for('product_detail', product_id=product_id))
