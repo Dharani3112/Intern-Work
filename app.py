@@ -308,7 +308,10 @@ def search():
             'image_url': get_main_image_url(product.product_id)
         })
     
-    return render_template('search.html', products=products_data, query=query, category=category)
+    # Get existing categories for the filter dropdown
+    categories = get_existing_categories()
+    
+    return render_template('search.html', products=products_data, query=query, category=category, categories=categories)
 
 @app.route('/product/<int:product_id>')
 def product_detail(product_id):

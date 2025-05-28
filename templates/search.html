@@ -25,17 +25,13 @@
                 <input type="number" name="min_price" class="filter-input" placeholder="Min price" value="{{ request.args.get('min_price', '') }}" step="0.01">
                 <input type="number" name="max_price" class="filter-input" placeholder="Max price" value="{{ request.args.get('max_price', '') }}" step="0.01">
             </div>
-            
-            <div class="filter-group">
+              <div class="filter-group">
                 <div class="filter-title">Category</div>
                 <select name="category" class="filter-input">
                     <option value="">All Categories</option>
-                    <option value="electronics" {% if request.args.get('category') == 'electronics' %}selected{% endif %}>Electronics</option>
-                    <option value="fashion" {% if request.args.get('category') == 'fashion' %}selected{% endif %}>Fashion</option>
-                    <option value="home-garden" {% if request.args.get('category') == 'home-garden' %}selected{% endif %}>Home & Garden</option>
-                    <option value="sports" {% if request.args.get('category') == 'sports' %}selected{% endif %}>Sports</option>
-                    <option value="books" {% if request.args.get('category') == 'books' %}selected{% endif %}>Books</option>
-                    <option value="health-beauty" {% if request.args.get('category') == 'health-beauty' %}selected{% endif %}>Health & Beauty</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat }}" {% if request.args.get('category') == cat %}selected{% endif %}>{{ cat.title() }}</option>
+                    {% endfor %}
                 </select>
             </div>
             
