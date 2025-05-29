@@ -1,5 +1,6 @@
-Flask
-Flask-SQLAlchemy
-Flask-JWT-Extended
-Flask-Bcrypt
-Flask-CORS
+Flask==3.1.1
+Flask-SQLAlchemy==3.1.1
+Flask-JWT-Extended==4.7.1
+Flask-Bcrypt==1.0.1
+Flask-CORS==6.0.0
+Werkzeug==3.0.1
