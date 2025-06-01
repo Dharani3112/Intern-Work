@@ -8,7 +8,7 @@ from datetime import datetime, timezone, timedelta
 from functools import wraps
 
 # Import models
-from model import db, User, Book, BookImage, Review, CartItem, app as model_app
+from model import db, User, Book, BookImage, Review, CartItem, Order, OrderItem, app as model_app
 
 app = Flask(__name__)
 
@@ -657,6 +657,94 @@ def admin_dashboard():
     
     return render_template('admin_dashboard.html', books=books)
 
+@app.route('/admin/summary')
+@admin_required
+def admin_summary():
+    """Admin summary page with books and orders analytics"""
+    
+    # Book Statistics
+    total_books = Book.query.count()
+    total_stock = db.session.query(db.func.sum(Book.stock)).scalar() or 0
+    
+    # Books by genre
+    genre_stats = db.session.query(
+        Book.genre, 
+        db.func.count(Book.book_id).label('count'),
+        db.func.sum(Book.stock).label('total_stock')
+    ).group_by(Book.genre).all()
+    
+    # Low stock books (less than 10)
+    low_stock_books = Book.query.filter(Book.stock < 10).order_by(Book.stock.asc()).all()
+    
+    # Order Statistics
+    total_orders = Order.query.count()
+    total_revenue = db.session.query(db.func.sum(Order.total_amount)).scalar() or 0
+    
+    # Orders by status
+    order_status_stats = db.session.query(
+        Order.status,
+        db.func.count(Order.order_id).label('count'),
+        db.func.sum(Order.total_amount).label('total_amount')
+    ).group_by(Order.status).all()
+    
+    # Recent orders (last 20)
+    recent_orders = Order.query.order_by(Order.order_date.desc()).limit(20).all()
+    
+    # Top selling books
+    top_books = db.session.query(
+        Book.title,
+        Book.author,
+        Book.price,
+        db.func.count(OrderItem.order_item_id).label('times_ordered'),
+        db.func.sum(OrderItem.quantity).label('total_sold')
+    ).join(OrderItem, Book.book_id == OrderItem.book_id)\
+     .group_by(Book.book_id)\
+     .order_by(db.func.sum(OrderItem.quantity).desc())\
+     .limit(10).all()
+    
+    # Monthly revenue (last 12 months)
+    monthly_revenue = db.session.query(
+        db.func.strftime('%Y-%m', Order.order_date).label('month'),
+        db.func.sum(Order.total_amount).label('revenue'),
+        db.func.count(Order.order_id).label('order_count')
+    ).filter(Order.status.in_(['completed', 'delivered']))\
+     .group_by(db.func.strftime('%Y-%m', Order.order_date))\
+     .order_by(db.func.strftime('%Y-%m', Order.order_date).desc())\
+     .limit(12).all()
+    
+    # Customer statistics
+    total_customers = User.query.count()
+    customers_with_orders = db.session.query(db.func.count(db.func.distinct(Order.user_id))).scalar() or 0
+    
+    # Top customers
+    top_customers = db.session.query(
+        User.username,
+        User.email,
+        db.func.count(Order.order_id).label('total_orders'),
+        db.func.sum(Order.total_amount).label('total_spent')
+    ).join(Order, User.user_id == Order.user_id)\
+     .group_by(User.user_id)\
+     .order_by(db.func.sum(Order.total_amount).desc())\
+     .limit(10).all()
+    
+    return render_template('admin_summary.html',
+                         # Book stats
+                         total_books=total_books,
+                         total_stock=total_stock,
+                         genre_stats=genre_stats,
+                         low_stock_books=low_stock_books,
+                         # Order stats
+                         total_orders=total_orders,
+                         total_revenue=total_revenue,
+                         order_status_stats=order_status_stats,
+                         recent_orders=recent_orders,
+                         top_books=top_books,
+                         monthly_revenue=monthly_revenue,
+                         # Customer stats
+                         total_customers=total_customers,
+                         customers_with_orders=customers_with_orders,
+                         top_customers=top_customers)
+
 @app.route('/admin/book/add', methods=['GET', 'POST'])
 @admin_required
 def admin_add_book():
@@ -789,8 +877,7 @@ def admin_delete_book(book_id):
         return redirect(url_for('admin_dashboard'))
     
     book_title = book.title
-    
-    # Delete associated images first
+      # Delete associated images first
     BookImage.query.filter_by(book_id=book_id).delete()
     # Delete book
     db.session.delete(book)

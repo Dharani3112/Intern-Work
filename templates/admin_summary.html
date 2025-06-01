@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Summary - Bookstore{% endblock %}
+
+{% block content %}
+<div class="admin-summary">
+    <h2 class="section-title">Admin Summary Dashboard</h2>
+    <p class="admin-subtitle">Comprehensive overview of your bookstore performance</p>
+
+    <div class="admin-actions">
+        <a href="{{ url_for('admin_dashboard') }}" class="view-product-btn admin-btn">
+            📚 Manage Books
+        </a>
+        <a href="{{ url_for('index') }}" class="view-product-btn admin-btn">
+            🏠 Back to Store
+        </a>
+    </div>
+
+    <!-- Overview Cards -->
+    <div class="summary-cards">
+        <div class="summary-card">
+            <div class="card-icon">📚</div>
+            <div class="card-content">
+                <h3>{{ total_books }}</h3>
+                <p>Total Books</p>
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="card-icon">📦</div>
+            <div class="card-content">
+                <h3>{{ total_stock }}</h3>
+                <p>Total Stock</p>
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="card-icon">🛒</div>
+            <div class="card-content">
+                <h3>{{ total_orders }}</h3>
+                <p>Total Orders</p>
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="card-icon">💰</div>
+            <div class="card-content">
+                <h3>${{ "%.2f"|format(total_revenue) }}</h3>
+                <p>Total Revenue</p>
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="card-icon">👥</div>
+            <div class="card-content">
+                <h3>{{ total_customers }}</h3>
+                <p>Total Customers</p>
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="card-icon">🛍️</div>
+            <div class="card-content">
+                <h3>{{ customers_with_orders }}</h3>
+                <p>Active Customers</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Book Analytics -->
+    <div class="analytics-section">
+        <h3 class="analytics-title">📚 Book Analytics</h3>
+        
+        <div class="analytics-grid">
+            <!-- Genre Distribution -->
+            <div class="analytics-card">
+                <h4>Books by Genre</h4>
+                <div class="stats-table">
+                    {% for genre, count, stock in genre_stats %}
+                    <div class="stats-row">
+                        <span>{{ genre or 'Unclassified' }}</span>
+                        <span>{{ count }} books ({{ stock }} stock)</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Low Stock Alert -->
+            <div class="analytics-card">
+                <h4>⚠️ Low Stock Alert</h4>
+                <div class="low-stock-list">
+                    {% if low_stock_books %}
+                        {% for book in low_stock_books %}
+                        <div class="low-stock-item">
+                            <span class="book-title">{{ book.title }}</span>
+                            <span class="stock-level {% if book.stock == 0 %}stock-zero{% endif %}">
+                                {{ book.stock }} left
+                            </span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="no-issues">✅ All books have adequate stock!</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Analytics -->
+    <div class="analytics-section">
+        <h3 class="analytics-title">🛒 Order Analytics</h3>
+        
+        <div class="analytics-grid">
+            <!-- Order Status -->
+            <div class="analytics-card">
+                <h4>Orders by Status</h4>
+                <div class="stats-table">
+                    {% for status, count, revenue in order_status_stats %}
+                    <div class="stats-row">
+                        <span>{{ status.title() }}</span>
+                        <span>{{ count }} orders (${{ "%.2f"|format(revenue or 0) }})</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Top Selling Books -->
+            <div class="analytics-card">
+                <h4>📈 Top Selling Books</h4>
+                <div class="top-books-list">
+                    {% for book in top_books %}
+                    <div class="top-book-item">
+                        <div class="book-info">
+                            <strong>{{ book.title }}</strong>
+                            <small>by {{ book.author }}</small>
+                        </div>
+                        <div class="book-sales">
+                            {{ book.total_sold }} sold
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Analytics -->
+    <div class="analytics-section">
+        <h3 class="analytics-title">👥 Customer Analytics</h3>
+        
+        <div class="analytics-card">
+            <h4>🏆 Top Customers</h4>
+            <div class="top-customers-table">
+                <div class="table-header">
+                    <span>Customer</span>
+                    <span>Orders</span>
+                    <span>Total Spent</span>
+                </div>
+                {% for customer in top_customers %}
+                <div class="table-row">
+                    <span class="customer-name">{{ customer.username }}</span>
+                    <span>{{ customer.total_orders }}</span>
+                    <span>${{ "%.2f"|format(customer.total_spent) }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Orders -->
+    <div class="analytics-section">
+        <h3 class="analytics-title">🕒 Recent Order History</h3>
+        
+        <div class="recent-orders-table">
+            <div class="table-header">
+                <span>Order ID</span>
+                <span>Customer</span>
+                <span>Date</span>
+                <span>Status</span>
+                <span>Amount</span>
+            </div>
+            {% for order in recent_orders %}
+            <div class="table-row">
+                <span class="order-id">#{{ order.order_id }}</span>
+                <span>{{ order.user.username if order.user else 'N/A' }}</span>
+                <span>{{ order.order_date.strftime('%Y-%m-%d %H:%M') if order.order_date else 'N/A' }}</span>
+                <span class="status-badge status-{{ order.status }}">{{ order.status.title() }}</span>
+                <span>${{ "%.2f"|format(order.total_amount) }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Monthly Revenue Chart -->
+    <div class="analytics-section">
+        <h3 class="analytics-title">📊 Monthly Revenue Trend</h3>
+        
+        <div class="analytics-card">
+            <div class="revenue-chart">
+                {% for month_data in monthly_revenue %}
+                <div class="chart-bar">
+                    <div class="bar-fill" style="height: {{ (month_data.revenue / (monthly_revenue[0].revenue if monthly_revenue else 1)) * 100 }}%"></div>
+                    <div class="bar-label">
+                        <small>{{ month_data.month }}</small>
+                        <strong>${{ "%.0f"|format(month_data.revenue) }}</strong>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
