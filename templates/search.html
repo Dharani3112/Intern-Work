@@ -7,17 +7,16 @@
     {% if query %}
         Search Results for "{{ query }}"
     {% else %}
-        All Products
+        All Books
     {% endif %}
 </h2>
 
 <div class="search-page">
     <!-- Filters Sidebar -->
     <div class="filters-sidebar">
-        <form action="{{ url_for('search') }}" method="GET">
-            <div class="filter-group">
+        <form action="{{ url_for('search') }}" method="GET">            <div class="filter-group">
                 <div class="filter-title">Search</div>
-                <input type="text" name="q" class="filter-input" placeholder="Search products..." value="{{ query }}">
+                <input type="text" name="q" class="filter-input" placeholder="Search books..." value="{{ query }}">
             </div>
             
             <div class="filter-group">
@@ -26,11 +25,11 @@
                 <input type="number" name="max_price" class="filter-input" placeholder="Max price" value="{{ request.args.get('max_price', '') }}" step="0.01">
             </div>
               <div class="filter-group">
-                <div class="filter-title">Category</div>
-                <select name="category" class="filter-input">
-                    <option value="">All Categories</option>
-                    {% for cat in categories %}
-                    <option value="{{ cat }}" {% if request.args.get('category') == cat %}selected{% endif %}>{{ cat.title() }}</option>
+                <div class="filter-title">Genre</div>
+                <select name="genre" class="filter-input">
+                    <option value="">All Genres</option>
+                    {% for genre in genres %}
+                    <option value="{{ genre }}" {% if request.args.get('genre') == genre %}selected{% endif %}>{{ genre.title() }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -40,30 +39,36 @@
     </div>
 
     <!-- Search Results -->
-    <div class="search-results">
-        {% if products %}
-            {% for product in products %}            <div class="result-item">
+    <div class="search-results">        {% if books %}
+            {% for book in books %}
+            <div class="result-item">
                 <div class="result-image">
-                    {% if product.image_url %}
-                        <img src="{{ product.image_url }}" alt="{{ product.name }}" />
+                    {% if book.image_url %}
+                        <img src="{{ book.image_url }}" alt="{{ book.title }}" />
                     {% else %}
                         <div class="placeholder-text">No Image</div>
                     {% endif %}
                 </div>
-                <div class="result-info">                    <div class="result-title">{{ product.name }}</div>
-                    <div class="result-description">{{ product.description or "No description available" }}</div>
-                    <div class="result-price">${{ "%.2f"|format(product.price) }}</div>
+                <div class="result-info">
+                    <div class="result-title">{{ book.title }}</div>
+                    <div class="result-author">by {{ book.author }}</div>
+                    <div class="result-description">{{ book.description or "No description available" }}</div>
+                    <div class="result-metadata">
+                        {% if book.genre %}<span class="book-genre">{{ book.genre }}</span>{% endif %}
+                        {% if book.isbn %}<span class="book-isbn">ISBN: {{ book.isbn }}</span>{% endif %}
+                    </div>
+                    <div class="result-price">${{ "%.2f"|format(book.price) }}</div>
                     <div class="result-actions">
-                        <a href="{{ url_for('product_detail', product_id=product.id) }}" class="view-product-btn">View Details</a>
-                        <a href="{{ url_for('add_to_cart', product_id=product.id) }}" class="add-to-cart-btn">Add to Cart</a>
+                        <a href="{{ url_for('book_detail', book_id=book.book_id) }}" class="view-product-btn">View Details</a>
+                        <a href="{{ url_for('add_to_cart', book_id=book.book_id) }}" class="add-to-cart-btn">Add to Cart</a>
                     </div>
                 </div>
             </div>
             {% endfor %}
         {% else %}
             <div class="no-results">
-                <h3>No products found</h3>
-                <p>Try adjusting your search criteria or browse our categories.</p>
+                <h3>No books found</h3>
+                <p>Try adjusting your search criteria or browse our genres.</p>
                 <a href="{{ url_for('index') }}" class="back-home-btn">Back to Home</a>
             </div>
         {% endif %}

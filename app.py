@@ -8,7 +8,7 @@ from datetime import datetime, timezone, timedelta
 from functools import wraps
 
 # Import models
-from model import db, User, Product, ProductImage, Review, CartItem, app as model_app
+from model import db, User, Book, BookImage, Review, CartItem, app as model_app
 
 app = Flask(__name__)
 
@@ -62,25 +62,26 @@ def get_cart_items(user_id=None):
         cart_items = CartItem.query.filter_by(user_id=user_id).all()
         cart_data = []
         for item in cart_items:
-            product = Product.query.get(item.product_id)
-            if product:
+            book = Book.query.get(item.book_id)
+            if book:
                 cart_data.append({
                     'cart_item_id': item.cart_item_id,
-                    'id': product.product_id,
-                    'name': product.name,
-                    'description': product.description,
-                    'price': float(product.price) if product.price else 0.0,
+                    'id': book.book_id,
+                    'title': book.title,
+                    'author': book.author,
+                    'description': book.description,
+                    'price': float(book.price) if book.price else 0.0,
                     'quantity': item.quantity,
-                    'image_url': get_main_image_url(product.product_id)
+                    'image_url': get_main_image_url(book.book_id)
                 })
         return cart_data
     else:
         # Session cart for anonymous users
         return session.get('cart', [])
 
-def get_main_image_url(product_id):
-    """Get main image URL for a product"""
-    main_image = ProductImage.query.filter_by(product_id=product_id, is_main=True).first()
+def get_main_image_url(book_id):
+    """Get main image URL for a book"""
+    main_image = BookImage.query.filter_by(book_id=book_id, is_main=True).first()
     return main_image.image_url if main_image else 'static/images/placeholder.png'
 
 def calculate_cart_totals(cart_items):
@@ -101,56 +102,57 @@ def api_health_check():
 @app.route('/api/products', methods=['GET'])
 def api_get_products():
     query = request.args.get('q', '')
-    category = request.args.get('category', '')
+    genre = request.args.get('genre', '')
     min_price_str = request.args.get('min_price')
     max_price_str = request.args.get('max_price')
 
-    products_query = Product.query
+    books_query = Book.query
 
     if query:
-        products_query = products_query.filter(
-            (Product.name.ilike(f"%{query}%")) | (Product.description.ilike(f"%{query}%"))
+        books_query = books_query.filter(
+            (Book.title.ilike(f"%{query}%")) | (Book.description.ilike(f"%{query}%")) | (Book.author.ilike(f"%{query}%"))
         )
-    if category:
-        products_query = products_query.filter(Product.category.ilike(f"%{category}%"))
+    if genre:
+        books_query = books_query.filter(Book.genre.ilike(f"%{genre}%"))
     if min_price_str:
         try:
             min_price = float(min_price_str)
-            products_query = products_query.filter(Product.price >= min_price)
+            books_query = books_query.filter(Book.price >= min_price)
         except ValueError:
             return jsonify(error="Invalid min_price format"), 400
     if max_price_str:
         try:
             max_price = float(max_price_str)
-            products_query = products_query.filter(Product.price <= max_price)
+            books_query = books_query.filter(Book.price <= max_price)
         except ValueError:
             return jsonify(error="Invalid max_price format"), 400
 
-    products = products_query.all()
-    products_data = [
+    books = books_query.all()
+    books_data = [
         {
-            'id': p.product_id,
-            'name': p.name,
-            'description': p.description,
-            'price': float(p.price) if p.price else 0.0,
-            'category': p.category,
-            'brand': p.brand,
-            'rating_avg': p.rating_avg,
-            'stock': p.stock,
-            'image_url': get_main_image_url(p.product_id)
-        } for p in products
+            'id': b.book_id,
+            'title': b.title,
+            'author': b.author,
+            'description': b.description,
+            'price': float(b.price) if b.price else 0.0,
+            'genre': b.genre,
+            'publisher': b.publisher,
+            'rating_avg': b.rating_avg,
+            'stock': b.stock,
+            'image_url': get_main_image_url(b.book_id)
+        } for b in books
     ]
-    return jsonify(products_data)
+    return jsonify(books_data)
 
-@app.route('/api/products/<int:product_id>', methods=['GET'])
-def api_get_product_detail(product_id):
-    product = Product.query.get(product_id)
-    if not product:
-        return jsonify(error="Product not found"), 404
+@app.route('/api/products/<int:book_id>', methods=['GET'])
+def api_get_product_detail(book_id):
+    book = Book.query.get(book_id)
+    if not book:
+        return jsonify(error="Book not found"), 404
     
     # Fetch images
-    main_image = ProductImage.query.filter_by(product_id=product.product_id, is_main=True).first()
-    other_images = ProductImage.query.filter_by(product_id=product.product_id, is_main=False).all()
+    main_image = BookImage.query.filter_by(book_id=book.book_id, is_main=True).first()
+    other_images = BookImage.query.filter_by(book_id=book.book_id, is_main=False).all()
     
     images_data = []
     if main_image: 
@@ -158,7 +160,7 @@ def api_get_product_detail(product_id):
     images_data.extend([{'url': img.image_url, 'is_main': False} for img in other_images])
 
     # Fetch reviews
-    reviews = Review.query.filter_by(product_id=product.product_id).all()
+    reviews = Review.query.filter_by(book_id=book.book_id).all()
     reviews_data = [
         {
             'user': User.query.get(r.user_id).username if User.query.get(r.user_id) else 'Anonymous', 
@@ -169,21 +171,26 @@ def api_get_product_detail(product_id):
         for r in reviews
     ]
 
-    product_data = {
-        'id': product.product_id,
-        'name': product.name,
-        'description': product.description,
-        'specifications': product.specifications,
-        'price': float(product.price) if product.price else 0.0,
-        'delivery_date_info': f"Expected delivery: {product.delivery_date} business days" if product.delivery_date else "Delivery info not available",
-        'category': product.category,
-        'brand': product.brand,
-        'rating_avg': product.rating_avg,
-        'stock': product.stock,
+    book_data = {
+        'id': book.book_id,
+        'title': book.title,
+        'author': book.author,
+        'description': book.description,
+        'price': float(book.price) if book.price else 0.0,
+        'delivery_date_info': f"Expected delivery: {book.delivery_date} business days" if book.delivery_date else "Delivery info not available",
+        'genre': book.genre,
+        'publisher': book.publisher,
+        'isbn': book.isbn,
+        'publication_year': book.publication_year,
+        'pages': book.pages,
+        'language': book.language,
+        'format': book.format,
+        'rating_avg': book.rating_avg,
+        'stock': book.stock,
         'images': images_data,
         'reviews': reviews_data
     }
-    return jsonify(product_data)
+    return jsonify(book_data)
 
 @app.route('/api/auth/signup', methods=['POST'])
 def api_signup():
@@ -228,27 +235,27 @@ def api_view_cart():
     subtotal, delivery_charge, total = calculate_cart_totals(cart_items)
     return jsonify(cart_items=cart_items, subtotal=subtotal, delivery_charge=delivery_charge, total=total)
 
-@app.route('/api/cart/add/<int:product_id>', methods=['POST'])
+@app.route('/api/cart/add/<int:book_id>', methods=['POST'])
 @jwt_required()
-def api_add_to_cart(product_id):
+def api_add_to_cart(book_id):
     current_user_id = get_jwt_identity()
-    product = Product.query.get(product_id)
-    if not product:
-        return jsonify(error="Product not found"), 404
+    book = Book.query.get(book_id)
+    if not book:
+        return jsonify(error="Book not found"), 404
 
     data = request.get_json()
     quantity = data.get('quantity', 1)
     if not isinstance(quantity, int) or quantity < 1:
         return jsonify(error="Invalid quantity"), 400
 
-    cart_item = CartItem.query.filter_by(user_id=current_user_id, product_id=product_id).first()
+    cart_item = CartItem.query.filter_by(user_id=current_user_id, book_id=book_id).first()
     if cart_item:
         cart_item.quantity += quantity
     else:
-        cart_item = CartItem(user_id=current_user_id, product_id=product_id, quantity=quantity)
+        cart_item = CartItem(user_id=current_user_id, book_id=book_id, quantity=quantity)
         db.session.add(cart_item)
     db.session.commit()
-    return jsonify(message="Product added to cart")
+    return jsonify(message="Book added to cart")
 
 # ============================================================================
 # WEB ROUTES (Server-side rendered pages)
@@ -256,83 +263,73 @@ def api_add_to_cart(product_id):
 
 @app.route('/')
 def index():
-    # Get featured products from database
-    products = Product.query.limit(6).all()
-    products_data = []
-    for product in products:
-        products_data.append({
-            'id': product.product_id,
-            'name': product.name,
-            'description': product.description,
-            'price': float(product.price) if product.price else 0.0,
-            'stock': product.stock,
-            'image_url': get_main_image_url(product.product_id)
-        })
+    # Get featured books from database
+    books = Book.query.limit(6).all()
     
-    # Get dynamic categories for homepage
-    categories = get_existing_categories()
+    # Add image_url attribute to each book object for template use
+    for book in books:
+        book.image_url = get_main_image_url(book.book_id)
     
-    return render_template('index.html', products=products_data, categories=categories)
+    # Get dynamic genres for homepage
+    genres = get_existing_genres()
+    
+    return render_template('index.html', books=books, genres=genres)
 
 @app.route('/search')
 def search():
     query = request.args.get('q', '')
-    category = request.args.get('category', '')
+    genre = request.args.get('genre', '')
     min_price = request.args.get('min_price', type=float)
     max_price = request.args.get('max_price', type=float)
     
-    # Filter products based on search criteria
-    products_query = Product.query
+    # Filter books based on search criteria
+    books_query = Book.query
     
     if query:
-        products_query = products_query.filter(
-            (Product.name.ilike(f"%{query}%")) | (Product.description.ilike(f"%{query}%"))
+        books_query = books_query.filter(
+            (Book.title.ilike(f"%{query}%")) | (Book.description.ilike(f"%{query}%")) | (Book.author.ilike(f"%{query}%"))
         )
-    if category:
-        products_query = products_query.filter(Product.category.ilike(f"%{category}%"))
+    if genre:
+        books_query = books_query.filter(Book.genre.ilike(f"%{genre}%"))
     if min_price is not None:
-        products_query = products_query.filter(Product.price >= min_price)
+        books_query = books_query.filter(Book.price >= min_price)
     if max_price is not None:
-        products_query = products_query.filter(Product.price <= max_price)
+        books_query = books_query.filter(Book.price <= max_price)
     
-    products = products_query.all()
-    products_data = []
-    for product in products:
-        products_data.append({
-            'id': product.product_id,
-            'name': product.name,
-            'description': product.description,
-            'price': float(product.price) if product.price else 0.0,
-            'image_url': get_main_image_url(product.product_id)
-        })
+    books = books_query.all()
     
-    # Get existing categories for the filter dropdown
-    categories = get_existing_categories()
+    # Add image_url attribute to each book object for template use
+    for book in books:
+        book.image_url = get_main_image_url(book.book_id)
     
-    return render_template('search.html', products=products_data, query=query, category=category, categories=categories)
+    # Get existing genres for the filter dropdown
+    genres = get_existing_genres()
+    
+    return render_template('search.html', books=books, query=query, genre=genre, genres=genres)
 
-@app.route('/product/<int:product_id>')
-def product_detail(product_id):
-    product = Product.query.get(product_id)
-    if not product:
+@app.route('/book/<int:book_id>')
+def book_detail(book_id):
+    book = Book.query.get(book_id)
+    if not book:
         return redirect(url_for('index'))
     
     # Get current user
     current_user = get_current_user()
     
-    # Check if current user has already reviewed this product
+    # Check if current user has already reviewed this book
     user_has_reviewed = False
     if current_user:
         existing_review = Review.query.filter_by(
             user_id=current_user.user_id, 
-            product_id=product_id
+            book_id=book_id
         ).first()
         user_has_reviewed = existing_review is not None
     
-    # Get product images
-    images = ProductImage.query.filter_by(product_id=product_id).all()
-      # Get reviews
-    reviews = Review.query.filter_by(product_id=product_id).all()
+    # Get book images
+    images = BookImage.query.filter_by(book_id=book_id).all()
+    
+    # Get reviews
+    reviews = Review.query.filter_by(book_id=book_id).all()
     reviews_data = []
     rating_counts = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
     total_rating = 0
@@ -351,20 +348,14 @@ def product_detail(product_id):
     # Calculate rating statistics
     total_reviews = len(reviews)
     avg_rating = round(total_rating / total_reviews, 1) if total_reviews > 0 else 0
-      # Calculate percentages for rating bars
+    
+    # Calculate percentages for rating bars
     rating_percentages = {}
     for rating in range(1, 6):
         rating_percentages[rating] = round((rating_counts[rating] / total_reviews) * 100) if total_reviews > 0 else 0
     
-    product_data = {
-        'id': product.product_id,
-        'name': product.name,
-        'description': product.description,
-        'specifications': product.specifications,
-        'price': float(product.price) if product.price else 0.0,
-        'delivery_date': product.delivery_date,
-        'image_url': get_main_image_url(product.product_id)
-    }
+    # Add image_url attribute to book object
+    book.image_url = get_main_image_url(book.book_id)
     
     rating_data = {
         'avg_rating': avg_rating,
@@ -372,8 +363,8 @@ def product_detail(product_id):
         'rating_percentages': rating_percentages
     }
     
-    return render_template('product.html', 
-                         product=product_data, 
+    return render_template('book.html', 
+                         book=book, 
                          reviews=reviews_data, 
                          rating_data=rating_data,
                          current_user=current_user,
@@ -434,13 +425,12 @@ def web_login():
         # Log in user
         session['user_id'] = user.user_id
         session['username'] = user.username
-        
-        # Transfer session cart to database if user has items in session
+          # Transfer session cart to database if user has items in session
         if 'cart' in session and session['cart']:
             for item in session['cart']:
                 existing_cart_item = CartItem.query.filter_by(
                     user_id=user.user_id, 
-                    product_id=item['id']
+                    book_id=item['id']
                 ).first()
                 
                 if existing_cart_item:
@@ -448,7 +438,7 @@ def web_login():
                 else:
                     cart_item = CartItem(
                         user_id=user.user_id,
-                        product_id=item['id'],
+                        book_id=item['id'],
                         quantity=item['quantity']
                     )
                     db.session.add(cart_item)
@@ -466,47 +456,51 @@ def web_logout():
     session.clear()
     return redirect(url_for('index'))
 
-@app.route('/add_to_cart/<int:product_id>')
-def add_to_cart(product_id):
-    product = Product.query.get(product_id)
-    if not product:
+@app.route('/add_to_cart/<int:book_id>')
+def add_to_cart(book_id):
+    book = Book.query.get(book_id)
+    if not book:
         return redirect(url_for('index'))
     
     # Check stock availability
-    if product.stock <= 0:
+    if book.stock <= 0:
         return redirect(request.referrer or url_for('index'))
     
     current_user = get_current_user()
     
-    if current_user:        # Add to database cart with stock validation
-        cart_item = CartItem.query.filter_by(user_id=current_user.user_id, product_id=product_id).first()
+    if current_user:
+        # Add to database cart with stock validation
+        cart_item = CartItem.query.filter_by(user_id=current_user.user_id, book_id=book_id).first()
         if cart_item:
             # Check if adding one more would exceed stock
-            if cart_item.quantity >= product.stock:
+            if cart_item.quantity >= book.stock:
                 return redirect(request.referrer or url_for('index'))
             cart_item.quantity += 1
         else:
-            cart_item = CartItem(user_id=current_user.user_id, product_id=product_id, quantity=1)
+            cart_item = CartItem(user_id=current_user.user_id, book_id=book_id, quantity=1)
             db.session.add(cart_item)
         db.session.commit()
     else:
         # Add to session cart with stock validation
         if 'cart' not in session:
             session['cart'] = []
-          # Check if product already in cart
-        cart_item = next((item for item in session['cart'] if item['id'] == product_id), None)
+        
+        # Check if book already in cart
+        cart_item = next((item for item in session['cart'] if item['id'] == book_id), None)
         if cart_item:
             # Check if adding one more would exceed stock
-            if cart_item['quantity'] >= product.stock:
+            if cart_item['quantity'] >= book.stock:
                 return redirect(request.referrer or url_for('index'))
             cart_item['quantity'] += 1
-        else:            session['cart'].append({
-                'id': product_id,
-                'name': product.name,
-                'description': product.description,
-                'price': float(product.price) if product.price else 0.0,
+        else:
+            session['cart'].append({
+                'id': book_id,
+                'title': book.title,
+                'author': book.author,
+                'description': book.description,
+                'price': float(book.price) if book.price else 0.0,
                 'quantity': 1,
-                'image_url': get_main_image_url(product_id)
+                'image_url': get_main_image_url(book_id)
             })
         session.modified = True
     
@@ -560,15 +554,14 @@ def shipping():
             'country': request.form.get('country'),
             'payment_method': request.form.get('payment_method')
         }
-        
-        # Check stock availability before processing order
+          # Check stock availability before processing order
         stock_issues = []
         for item in cart_items:
-            product = Product.query.get(item['id'])
-            if not product:
-                stock_issues.append(f"Product '{item['name']}' no longer exists.")
-            elif product.stock < item['quantity']:
-                stock_issues.append(f"Only {product.stock} units of '{item['name']}' available (you requested {item['quantity']}).")
+            book = Book.query.get(item['id'])
+            if not book:
+                stock_issues.append(f"Book '{item['title']}' no longer exists.")
+            elif book.stock < item['quantity']:
+                stock_issues.append(f"Only {book.stock} units of '{item['title']}' available (you requested {item['quantity']}).")
         
         if stock_issues:
             return redirect(url_for('cart'))
@@ -576,11 +569,11 @@ def shipping():
         # Process stock reduction for each item
         try:
             for item in cart_items:
-                product = Product.query.get(item['id'])
-                if product:
-                    product.stock -= item['quantity']
-                    if product.stock < 0:
-                        product.stock = 0  # Prevent negative stock
+                book = Book.query.get(item['id'])
+                if book:
+                    book.stock -= item['quantity']
+                    if book.stock < 0:
+                        book.stock = 0  # Prevent negative stock
             
             # Clear cart after successful order and stock update
             CartItem.query.filter_by(user_id=current_user.user_id).delete()
@@ -608,19 +601,19 @@ def forgot_password():
 # ADMIN HELPER FUNCTIONS
 # ============================================================================
 
-def get_existing_categories():
-    """Fetch all unique categories from existing products"""
+def get_existing_genres():
+    """Fetch all unique genres from existing books"""
     try:
-        categories = db.session.query(Product.category).filter(
-            Product.category.isnot(None),
-            Product.category != ''
-        ).distinct().order_by(Product.category).all()
+        genres = db.session.query(Book.genre).filter(
+            Book.genre.isnot(None),
+            Book.genre != ''
+        ).distinct().order_by(Book.genre).all()
         
         # Convert tuples to list of strings
-        category_list = [cat[0] for cat in categories if cat[0]]
-        return category_list
+        genre_list = [genre[0] for genre in genres if genre[0]]
+        return genre_list
     except Exception as e:
-        print(f"Error fetching categories: {e}")
+        print(f"Error fetching genres: {e}")
         return []
 
 # ============================================================================
@@ -653,72 +646,76 @@ def admin_logout():
 @app.route('/admin')
 @admin_required
 def admin_dashboard():
-    """Admin dashboard for product management - password-based access"""
+    """Admin dashboard for book management - password-based access"""
     current_user = get_current_user()
     
-    products = Product.query.all()
-    products_data = []
-    for product in products:
-        products_data.append({
-            'id': product.product_id,
-            'name': product.name,
-            'description': product.description,
-            'price': float(product.price) if product.price else 0.0,
-            'stock': product.stock,
-            'category': product.category,
-            'brand': product.brand,
-            'image_url': get_main_image_url(product.product_id)
-        })
+    books = Book.query.all()
     
-    return render_template('admin_dashboard.html', products=products_data)
+    # Add image_url attribute to each book object for template use
+    for book in books:
+        book.image_url = get_main_image_url(book.book_id)
+    
+    return render_template('admin_dashboard.html', books=books)
 
-@app.route('/admin/product/add', methods=['GET', 'POST'])
+@app.route('/admin/book/add', methods=['GET', 'POST'])
 @admin_required
-def admin_add_product():
-    """Add new product via web interface"""
+def admin_add_book():
+    """Add new book via web interface"""
     if request.method == 'POST':
-        name = request.form.get('name')
+        title = request.form.get('title')
+        author = request.form.get('author')
         description = request.form.get('description')
-        specifications = request.form.get('specifications')
         price = request.form.get('price')
         delivery_date = request.form.get('delivery_date')
-        category = request.form.get('category')
-        brand = request.form.get('brand')
+        genre = request.form.get('genre')
+        publisher = request.form.get('publisher')
+        isbn = request.form.get('isbn')
+        publication_year = request.form.get('publication_year')
+        pages = request.form.get('pages')
+        language = request.form.get('language')
+        format_type = request.form.get('format')
         stock = request.form.get('stock')
         image_url = request.form.get('image_url')
         
         # Validation
-        if not name or not price:
-            categories = get_existing_categories()
-            return render_template('admin_add_product.html', categories=categories)
+        if not title or not author or not price:
+            genres = get_existing_genres()
+            return render_template('admin_add_book.html', genres=genres)
         
         try:
             price = float(price)
             delivery_date = int(delivery_date) if delivery_date else 7
             stock = int(stock) if stock else 0
+            publication_year = int(publication_year) if publication_year else None
+            pages = int(pages) if pages else None
         except ValueError:
-            categories = get_existing_categories()
-            return render_template('admin_add_product.html', categories=categories)
+            genres = get_existing_genres()
+            return render_template('admin_add_book.html', genres=genres)
         
-        # Create product
-        product = Product(
-            name=name,
+        # Create book
+        book = Book(
+            title=title,
+            author=author,
             description=description,
-            specifications=specifications,
             price=price,
             delivery_date=delivery_date,
-            category=category,
-            brand=brand,
+            genre=genre,
+            publisher=publisher,
+            isbn=isbn,
+            publication_year=publication_year,
+            pages=pages,
+            language=language or 'English',
+            format=format_type or 'Paperback',
             stock=stock
         )
         
-        db.session.add(product)
+        db.session.add(book)
         db.session.flush()
         
         # Add image if provided
         if image_url:
-            main_image = ProductImage(
-                product_id=product.product_id,
+            main_image = BookImage(
+                book_id=book.book_id,
                 image_url=image_url,
                 is_main=True
             )
@@ -727,42 +724,47 @@ def admin_add_product():
         db.session.commit()
         return redirect(url_for('admin_dashboard'))
     
-    # GET request - fetch existing categories
-    categories = get_existing_categories()
-    return render_template('admin_add_product.html', categories=categories)
+    # GET request - fetch existing genres
+    genres = get_existing_genres()
+    return render_template('admin_add_book.html', genres=genres)
 
-@app.route('/admin/product/edit/<int:product_id>', methods=['GET', 'POST'])
+@app.route('/admin/book/edit/<int:book_id>', methods=['GET', 'POST'])
 @admin_required
-def admin_edit_product(product_id):
-    """Edit existing product via web interface"""
-    product = Product.query.get(product_id)
-    if not product:
+def admin_edit_book(book_id):
+    """Edit existing book via web interface"""
+    book = Book.query.get(book_id)
+    if not book:
         return redirect(url_for('admin_dashboard'))
     
     if request.method == 'POST':
-        product.name = request.form.get('name')
-        product.description = request.form.get('description')
-        product.specifications = request.form.get('specifications')
-        product.category = request.form.get('category')
-        product.brand = request.form.get('brand')
+        book.title = request.form.get('title')
+        book.author = request.form.get('author')
+        book.description = request.form.get('description')
+        book.genre = request.form.get('genre')
+        book.publisher = request.form.get('publisher')
+        book.isbn = request.form.get('isbn')
+        book.language = request.form.get('language')
+        book.format = request.form.get('format')
         
         try:
-            product.price = float(request.form.get('price'))
-            product.delivery_date = int(request.form.get('delivery_date', 7))
-            product.stock = int(request.form.get('stock', 0))
+            book.price = float(request.form.get('price'))
+            book.delivery_date = int(request.form.get('delivery_date', 7))
+            book.stock = int(request.form.get('stock', 0))
+            book.publication_year = int(request.form.get('publication_year')) if request.form.get('publication_year') else None
+            book.pages = int(request.form.get('pages')) if request.form.get('pages') else None
         except ValueError:
-            categories = get_existing_categories()
-            return render_template('admin_edit_product.html', product=product, categories=categories)
+            genres = get_existing_genres()
+            return render_template('admin_edit_book.html', book=book, genres=genres)
         
         # Update main image if provided
         image_url = request.form.get('image_url')
         if image_url:
-            main_image = ProductImage.query.filter_by(product_id=product_id, is_main=True).first()
+            main_image = BookImage.query.filter_by(book_id=book_id, is_main=True).first()
             if main_image:
                 main_image.image_url = image_url
             else:
-                new_image = ProductImage(
-                    product_id=product_id,
+                new_image = BookImage(
+                    book_id=book_id,
                     image_url=image_url,
                     is_main=True
                 )
@@ -771,27 +773,27 @@ def admin_edit_product(product_id):
         db.session.commit()
         return redirect(url_for('admin_dashboard'))
     
-    # Get current main image and categories
-    main_image = ProductImage.query.filter_by(product_id=product_id, is_main=True).first()
+    # Get current main image and genres
+    main_image = BookImage.query.filter_by(book_id=book_id, is_main=True).first()
     current_image_url = main_image.image_url if main_image else ''
-    categories = get_existing_categories()
+    genres = get_existing_genres()
     
-    return render_template('admin_edit_product.html', product=product, current_image_url=current_image_url, categories=categories)
+    return render_template('admin_edit_book.html', book=book, current_image_url=current_image_url, genres=genres)
 
-@app.route('/admin/product/delete/<int:product_id>')
+@app.route('/admin/book/delete/<int:book_id>')
 @admin_required
-def admin_delete_product(product_id):
-    """Delete product via web interface"""
-    product = Product.query.get(product_id)
-    if not product:
+def admin_delete_book(book_id):
+    """Delete book via web interface"""
+    book = Book.query.get(book_id)
+    if not book:
         return redirect(url_for('admin_dashboard'))
     
-    product_name = product.name
+    book_title = book.title
     
     # Delete associated images first
-    ProductImage.query.filter_by(product_id=product_id).delete()
-    # Delete product
-    db.session.delete(product)
+    BookImage.query.filter_by(book_id=book_id).delete()
+    # Delete book
+    db.session.delete(book)
     db.session.commit()
     
     return redirect(url_for('admin_dashboard'))
@@ -810,24 +812,24 @@ def inject_current_user():
     """Make current user available to all templates"""
     return {'get_current_user': get_current_user}
 
-@app.route('/product/<int:product_id>/review', methods=['POST'])
+@app.route('/book/<int:book_id>/review', methods=['POST'])
 @login_required
-def add_review(product_id):
-    """Add a review for a product"""
-    product = Product.query.get(product_id)
-    if not product:
+def add_review(book_id):
+    """Add a review for a book"""
+    book = Book.query.get(book_id)
+    if not book:
         return redirect(url_for('index'))
     
     current_user = get_current_user()
     
-    # Check if user has already reviewed this product
+    # Check if user has already reviewed this book
     existing_review = Review.query.filter_by(
         user_id=current_user.user_id, 
-        product_id=product_id
+        book_id=book_id
     ).first()
     
     if existing_review:
-        return redirect(url_for('product_detail', product_id=product_id))
+        return redirect(url_for('book_detail', book_id=book_id))
     
     # Get form data
     rating = request.form.get('rating')
@@ -835,22 +837,22 @@ def add_review(product_id):
     
     # Validation
     if not rating:
-        return redirect(url_for('product_detail', product_id=product_id))
+        return redirect(url_for('book_detail', book_id=book_id))
     
     try:
         rating = int(rating)
         if rating < 1 or rating > 5:
             raise ValueError("Rating must be between 1 and 5")
     except ValueError:
-        return redirect(url_for('product_detail', product_id=product_id))
+        return redirect(url_for('book_detail', book_id=book_id))
     
     if not comment:
-        return redirect(url_for('product_detail', product_id=product_id))
+        return redirect(url_for('book_detail', book_id=book_id))
     
     # Create new review
     new_review = Review(
         user_id=current_user.user_id,
-        product_id=product_id,
+        book_id=book_id,
         rating=rating,
         description=comment,
         created_at=datetime.now()
@@ -863,10 +865,10 @@ def add_review(product_id):
         db.session.rollback()
         print(f"Error adding review: {e}")
     
-    return redirect(url_for('product_detail', product_id=product_id))
+    return redirect(url_for('book_detail', book_id=book_id))
 
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-        print("MySQL tables checked/created.")
+        print("Bookstore database tables checked/created.")
     app.run(debug=True, port=5000)

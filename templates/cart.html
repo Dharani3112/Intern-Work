@@ -7,18 +7,19 @@
 
 <div class="cart-container">
     <!-- Cart Items -->
-    <div class="cart-items">
-        {% if cart_items %}
-            {% for item in cart_items %}            <div class="cart-item">
+    <div class="cart-items">        {% if cart_items %}
+            {% for item in cart_items %}
+            <div class="cart-item">
                 <div class="cart-item-image">
                     {% if item.image_url %}
-                        <img src="{{ item.image_url }}" alt="{{ item.name }}" />
+                        <img src="{{ item.image_url }}" alt="{{ item.title }}" />
                     {% else %}
                         <div class="placeholder-text">No Image</div>
                     {% endif %}
                 </div>
                 <div class="cart-item-info">
-                    <div class="cart-item-title">{{ item.name }}</div>
+                    <div class="cart-item-title">{{ item.title }}</div>
+                    <div class="cart-item-author">by {{ item.author }}</div>
                     <div class="cart-item-description">{{ item.description }}</div>
                     <div class="cart-item-price">${{ "%.2f"|format(item.price) }} each</div>
                     <div class="cart-item-quantity">Quantity: {{ item.quantity }}</div>
@@ -36,7 +37,7 @@
         {% else %}
             <div class="empty-cart">
                 <h3>Your cart is empty</h3>
-                <p>Add some products to get started!</p>
+                <p>Add some books to get started!</p>
                 <a href="{{ url_for('index') }}" class="continue-shopping-btn">Continue Shopping</a>
             </div>
         {% endif %}

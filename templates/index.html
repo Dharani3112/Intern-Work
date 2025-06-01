@@ -3,37 +3,40 @@
 {% block title %}Logo - Home{% endblock %}
 
 {% block content %}
-<!-- Categories Section -->
+<!-- Genres Section -->
 <div class="categories-section">
-    <h2 class="section-title">Shop by Category</h2>
+    <h2 class="section-title">Shop by Genre</h2>
     <div class="categories-container">
-        {% if categories %}
-            {% for category in categories %}
-            <a href="{{ url_for('search', category=category) }}" class="category-btn">{{ category }}</a>
+        {% if genres %}
+            {% for genre in genres %}
+            <a href="{{ url_for('search', genre=genre) }}" class="category-btn">{{ genre }}</a>
             {% endfor %}
         {% else %}
-            <p style="text-align: center; color: #666; padding: 2rem;">No categories available yet. Add some products to see categories here!</p>
+            <p style="text-align: center; color: #666; padding: 2rem;">No genres available yet. Add some books to see genres here!</p>
         {% endif %}
     </div>
 </div>
 
-<!-- Featured Products -->
-<h2 class="section-title">Featured Products</h2>
+<!-- Featured Books -->
+<h2 class="section-title">Featured Books</h2>
 <div class="products-grid">
-    {% for product in products %}    <div class="product-card">
+    {% for book in books %}
+    <div class="product-card">
         <div class="product-image">
-            {% if product.image_url %}
-                <img src="{{ product.image_url }}" alt="{{ product.name }}" />
+            {% if book.image_url %}
+                <img src="{{ book.image_url }}" alt="{{ book.title }}" />
             {% else %}
                 <div class="placeholder-text">No Image</div>
             {% endif %}
-        </div><div class="product-title">{{ product.name }}</div>
-        <div class="product-description">{{ (product.description or "No description available")[:100] }}{% if product.description and product.description|length > 100 %}...{% endif %}</div>
+        </div>
+        <div class="product-title">{{ book.title }}</div>
+        <div class="product-author">by {{ book.author }}</div>
+        <div class="product-description">{{ (book.description or "No description available")[:100] }}{% if book.description and book.description|length > 100 %}...{% endif %}</div>
         <div class="product-footer">
-            <div class="product-price">${{ "%.2f"|format(product.price) }}</div>
+            <div class="product-price">${{ "%.2f"|format(book.price) }}</div>
             <div class="product-actions">
-                <a href="{{ url_for('product_detail', product_id=product.id) }}" class="view-product-btn">View Details</a>
-                <a href="{{ url_for('add_to_cart', product_id=product.id) }}" class="add-to-cart-btn">Add to Cart</a>
+                <a href="{{ url_for('book_detail', book_id=book.book_id) }}" class="view-product-btn">View Details</a>
+                <a href="{{ url_for('add_to_cart', book_id=book.book_id) }}" class="add-to-cart-btn">Add to Cart</a>
             </div>
         </div>
     </div>

@@ -28,30 +28,35 @@ class User(db.Model):
     def check_password(self, password):
         return bcrypt.check_password_hash(self.password_hash, password)
 
-class Product(db.Model):
-    __tablename__ = 'products'
-    product_id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(200), nullable=False)
+class Book(db.Model):
+    __tablename__ = 'books'
+    book_id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    author = db.Column(db.String(200), nullable=False)
+    isbn = db.Column(db.String(20), unique=True)
+    publisher = db.Column(db.String(100))
+    publication_year = db.Column(db.Integer)
+    pages = db.Column(db.Integer)
+    language = db.Column(db.String(50), default='English')
     description = db.Column(db.Text)
-    specifications = db.Column(db.Text)
     price = db.Column(db.Numeric(10, 2))
-    delivery_date = db.Column(db.Integer)  # Can be changed to db.Date if using actual dates
-    category = db.Column(db.String(100))
-    brand = db.Column(db.String(100))
+    delivery_date = db.Column(db.Integer)  # Delivery days
+    genre = db.Column(db.String(100))  # Changed from category to genre
+    format = db.Column(db.String(50), default='Paperback')  # Paperback, Hardcover, eBook
     rating_avg = db.Column(db.Float, default=0.0)
     stock = db.Column(db.Integer, default=0)
 
-class ProductImage(db.Model):
-    __tablename__ = 'product_images'
+class BookImage(db.Model):
+    __tablename__ = 'book_images'
     image_id = db.Column(db.Integer, primary_key=True)
-    product_id = db.Column(db.Integer, db.ForeignKey('products.product_id'))
+    book_id = db.Column(db.Integer, db.ForeignKey('books.book_id'))
     image_url = db.Column(db.Text)
     is_main = db.Column(db.Boolean, default=False)
 
 class Review(db.Model):
     __tablename__ = 'reviews'
     review_id = db.Column(db.Integer, primary_key=True)
-    product_id = db.Column(db.Integer, db.ForeignKey('products.product_id'))
+    book_id = db.Column(db.Integer, db.ForeignKey('books.book_id'))
     user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'))
     rating = db.Column(db.Integer, nullable=False)
     description = db.Column(db.Text)
@@ -65,11 +70,11 @@ class CartItem(db.Model):
     __tablename__ = 'cart_items'
     cart_item_id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'))
-    product_id = db.Column(db.Integer, db.ForeignKey('products.product_id'))
+    book_id = db.Column(db.Integer, db.ForeignKey('books.book_id'))
     quantity = db.Column(db.Integer, default=1)
     added_at = db.Column(db.DateTime, default=datetime.now(timezone.utc))
 
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-        print("MySQL tables created.")
+        print("Bookstore database tables created.")

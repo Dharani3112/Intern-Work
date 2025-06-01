@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Book{% endblock %}
+
+{% block content %}
+<div class="main-content">
+    <div class="form-container">
+        <h2 class="section-title">Edit Book: {{ book.title }}</h2>
+        
+        <form method="POST" class="product-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="title" class="form-label">Book Title *</label>
+                    <input type="text" class="form-input" id="title" name="title" 
+                           value="{{ book.title }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="author" class="form-label">Author *</label>
+                    <input type="text" class="form-input" id="author" name="author" 
+                           value="{{ book.author }}" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="isbn" class="form-label">ISBN</label>
+                    <input type="text" class="form-input" id="isbn" name="isbn" 
+                           value="{{ book.isbn or '' }}" placeholder="978-0-123456-78-9">
+                </div>
+                <div class="form-group">
+                    <label for="publisher" class="form-label">Publisher</label>
+                    <input type="text" class="form-input" id="publisher" name="publisher" 
+                           value="{{ book.publisher or '' }}">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="description" class="form-label">Description</label>
+                <textarea class="form-input" id="description" name="description" rows="3" 
+                          placeholder="Brief description of the book...">{{ book.description or '' }}</textarea>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="publication_year" class="form-label">Publication Year</label>
+                    <input type="number" class="form-input" id="publication_year" name="publication_year" 
+                           min="1000" max="2024" value="{{ book.publication_year or '' }}">
+                </div>
+                <div class="form-group">
+                    <label for="pages" class="form-label">Pages</label>
+                    <input type="number" class="form-input" id="pages" name="pages" 
+                           min="1" value="{{ book.pages or '' }}">
+                </div>
+                <div class="form-group">
+                    <label for="language" class="form-label">Language</label>
+                    <input type="text" class="form-input" id="language" name="language" 
+                           value="{{ book.language or 'English' }}">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="format" class="form-label">Format</label>
+                    <select class="form-input" id="format" name="format">
+                        <option value="">Select Format</option>
+                        <option value="Paperback" {% if book.format == 'Paperback' %}selected{% endif %}>Paperback</option>
+                        <option value="Hardcover" {% if book.format == 'Hardcover' %}selected{% endif %}>Hardcover</option>
+                        <option value="Ebook" {% if book.format == 'Ebook' %}selected{% endif %}>Ebook</option>
+                        <option value="Audiobook" {% if book.format == 'Audiobook' %}selected{% endif %}>Audiobook</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="price" class="form-label">Price ($) *</label>
+                    <input type="number" class="form-input" id="price" name="price" 
+                           step="0.01" min="0" value="{{ book.price }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="stock" class="form-label">Stock Quantity</label>
+                    <input type="number" class="form-input" id="stock" name="stock" 
+                           min="0" value="{{ book.stock }}">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="genre" class="form-label">Genre</label>
+                <select class="form-input" id="genre" name="genre" onchange="handleGenreChange(this)">
+                    <option value="">Select Genre</option>
+                    {% for genre in genres %}
+                    <option value="{{ genre }}" {% if book.genre == genre %}selected{% endif %}>{{ genre }}</option>
+                    {% endfor %}
+                    {% if book.genre and book.genre not in genres %}
+                    <option value="{{ book.genre }}" selected>{{ book.genre }}</option>
+                    {% endif %}
+                    <option value="__new_genre__">+ Add New Genre</option>
+                </select>
+                <input type="text" class="form-input" id="new_genre" name="new_genre" 
+                       placeholder="Enter new genre name" style="display: none; margin-top: 0.5rem;">
+                <div class="form-help">
+                    Select an existing genre or choose "Add New Genre" to create a new one.
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="specifications" class="form-label">Additional Information</label>
+                <textarea class="form-input" id="specifications" name="specifications" rows="2" 
+                          placeholder="e.g., Award winner, Book series info, Special edition details">{{ book.specifications or '' }}</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="delivery_date" class="form-label">Delivery Days</label>
+                <input type="number" class="form-input" id="delivery_date" name="delivery_date" 
+                       min="1" value="{{ book.delivery_date or 7 }}">
+            </div>
+
+            <div class="form-group">
+                <label for="image_url" class="form-label">Book Cover Image URL</label>
+                <input type="url" class="form-input" id="image_url" name="image_url" 
+                       value="{{ current_image_url }}" placeholder="https://example.com/book-cover.jpg">
+                <div class="form-help">
+                    You can use free images from <a href="https://unsplash.com" target="_blank">Unsplash</a> 
+                    or <a href="https://pixabay.com" target="_blank">Pixabay</a>
+                </div>
+                {% if current_image_url %}
+                <div class="image-preview">
+                    <small class="preview-label">Current image:</small>
+                    <img src="{{ current_image_url }}" alt="Current book cover" class="current-image">
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="form-actions">
+                <a href="{{ url_for('admin_dashboard') }}" class="view-product-btn">Cancel</a>
+                <button type="submit" class="add-to-cart-btn">Update Book</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function handleGenreChange(select) {
+    const newGenreInput = document.getElementById('new_genre');
+    
+    if (select.value === '__new_genre__') {
+        newGenreInput.style.display = 'block';
+        newGenreInput.required = true;
+        newGenreInput.focus();
+        // Clear the genre name to prevent submission of '__new_genre__'
+        select.name = '';
+        newGenreInput.name = 'genre';
+    } else {
+        newGenreInput.style.display = 'none';
+        newGenreInput.required = false;
+        newGenreInput.value = '';
+        select.name = 'genre';
+        newGenreInput.name = 'new_genre';
+    }
+}
+</script>
+{% endblock %}

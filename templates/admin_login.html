@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Admin Login - Logo{% endblock %}
+{% block title %}Admin Login - Bookstore{% endblock %}
 
 {% block content %}
 <h2 class="section-title">Admin Access</h2>
@@ -9,9 +9,8 @@
     <form method="POST">
         <div class="form-group">
             <label for="admin_password" class="form-label">Admin Password *</label>
-            <input type="password" class="form-input" id="admin_password" name="admin_password" required>
-            <div class="form-help">
-                Enter the admin password to access product management.
+            <input type="password" class="form-input" id="admin_password" name="admin_password" required>            <div class="form-help">
+                Enter the admin password to access book management.
             </div>
         </div>
 
@@ -24,33 +23,32 @@
 
 <div class="admin-info">
     <h3>Admin Features</h3>
-    <div class="benefits-grid">
-        <div class="benefit-item">
+    <div class="benefits-grid">        <div class="benefit-item">     
             <div class="benefit-icon">➕</div>
             <div class="benefit-text">
-                <h4>Add Products</h4>
-                <p>Add new products to your store</p>
+                <h4>Add Books</h4>
+                <p>Add new books to your store</p>
             </div>
         </div>
         <div class="benefit-item">
             <div class="benefit-icon">✏️</div>
             <div class="benefit-text">
-                <h4>Edit Products</h4>
-                <p>Update product information and pricing</p>
+                <h4>Edit Books</h4>
+                <p>Update book information and pricing</p>
             </div>
         </div>
         <div class="benefit-item">
             <div class="benefit-icon">🗑️</div>
             <div class="benefit-text">
-                <h4>Delete Products</h4>
-                <p>Remove products from your inventory</p>
+                <h4>Delete Books</h4>
+                <p>Remove books from your inventory</p>
             </div>
         </div>
         <div class="benefit-item">
             <div class="benefit-icon">📊</div>
             <div class="benefit-text">
                 <h4>Manage Inventory</h4>
-                <p>Track stock levels and categories</p>
+                <p>Track stock levels and genres</p>
             </div>
         </div>
     </div>

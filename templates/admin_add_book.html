@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}Add New Book - Bookstore{% endblock %}
+
+{% block content %}
+<h2 class="section-title">Add New Book</h2>
+
+<div class="form-container">
+    <form method="POST">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="title" class="form-label">Book Title *</label>
+                <input type="text" class="form-input" id="title" name="title" required>
+            </div>
+            <div class="form-group">
+                <label for="author" class="form-label">Author *</label>
+                <input type="text" class="form-input" id="author" name="author" required>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="isbn" class="form-label">ISBN</label>
+                <input type="text" class="form-input" id="isbn" name="isbn" 
+                       placeholder="978-0-123456-78-9">
+            </div>
+            <div class="form-group">
+                <label for="publisher" class="form-label">Publisher</label>
+                <input type="text" class="form-input" id="publisher" name="publisher">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="description" class="form-label">Description</label>
+            <textarea class="form-input" id="description" name="description" rows="3" 
+                      placeholder="Brief description of the book..."></textarea>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="publication_year" class="form-label">Publication Year</label>
+                <input type="number" class="form-input" id="publication_year" name="publication_year" 
+                       min="1000" max="2024">
+            </div>
+            <div class="form-group">
+                <label for="pages" class="form-label">Pages</label>
+                <input type="number" class="form-input" id="pages" name="pages" 
+                       min="1">
+            </div>
+            <div class="form-group">
+                <label for="language" class="form-label">Language</label>
+                <input type="text" class="form-input" id="language" name="language" 
+                       value="English">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="format" class="form-label">Format</label>
+                <select class="form-input" id="format" name="format">
+                    <option value="">Select Format</option>
+                    <option value="Paperback">Paperback</option>
+                    <option value="Hardcover">Hardcover</option>
+                    <option value="Ebook">Ebook</option>
+                    <option value="Audiobook">Audiobook</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="price" class="form-label">Price ($) *</label>
+                <input type="number" class="form-input" id="price" name="price" 
+                       step="0.01" min="0" required>
+            </div>
+            <div class="form-group">
+                <label for="stock" class="form-label">Stock Quantity</label>
+                <input type="number" class="form-input" id="stock" name="stock" 
+                       min="0" value="0">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="genre" class="form-label">Genre</label>
+            <select class="form-input" id="genre" name="genre" onchange="handleGenreChange(this)">
+                <option value="">Select Genre</option>
+                {% for genre in genres %}
+                <option value="{{ genre }}">{{ genre }}</option>
+                {% endfor %}
+                <option value="__new_genre__">+ Add New Genre</option>
+            </select>
+            <input type="text" class="form-input" id="new_genre" name="new_genre" 
+                   placeholder="Enter new genre name" style="display: none; margin-top: 0.5rem;">
+            <div class="form-help">
+                Select an existing genre or choose "Add New Genre" to create a new one.
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="specifications" class="form-label">Additional Information</label>
+            <textarea class="form-input" id="specifications" name="specifications" rows="2" 
+                      placeholder="e.g., Award winner, Book series info, Special edition details"></textarea>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="delivery_date" class="form-label">Delivery Days</label>
+                <input type="number" class="form-input" id="delivery_date" name="delivery_date" 
+                       min="1" value="7">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="image_url" class="form-label">Book Cover Image URL</label>
+            <input type="url" class="form-input" id="image_url" name="image_url" 
+                   placeholder="https://example.com/book-cover.jpg">
+            <div class="form-help">
+                You can use free images from <a href="https://unsplash.com" target="_blank" class="link">Unsplash</a> 
+                or <a href="https://pixabay.com" target="_blank" class="link">Pixabay</a>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <a href="{{ url_for('admin_dashboard') }}" class="view-product-btn">Cancel</a>
+            <button type="submit" class="add-to-cart-btn">Add Book</button>
+        </div>
+    </form>
+</div>
+
+<script>
+function handleGenreChange(select) {
+    const newGenreInput = document.getElementById('new_genre');
+    
+    if (select.value === '__new_genre__') {
+        newGenreInput.style.display = 'block';
+        newGenreInput.required = true;
+        newGenreInput.focus();
+        // Clear the genre name to prevent submission of '__new_genre__'
+        select.name = '';
+        newGenreInput.name = 'genre';
+    } else {
+        newGenreInput.style.display = 'none';
+        newGenreInput.required = false;
+        newGenreInput.value = '';
+        select.name = 'genre';
+        newGenreInput.name = 'new_genre';
+    }
+}
+</script>
+{% endblock %}

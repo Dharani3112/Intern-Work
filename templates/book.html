@@ -1,52 +1,69 @@
 {% extends "base.html" %}
 
-{% block title %}{{ product.name }} - Logo{% endblock %}
+{% block title %}{{ book.title }} - Bookstore{% endblock %}
 
 {% block content %}
-<!-- Product Details -->
+<!-- Book Details -->
 <div class="product-detail">
     <div class="product-detail-image">
-        {% if product.image_url %}
-            <img src="{{ product.image_url }}" alt="{{ product.name }}" />
+        {% if book.image_url %}
+            <img src="{{ book.image_url }}" alt="{{ book.title }}" />
         {% else %}
             <div class="placeholder-text">No Image Available</div>
         {% endif %}
     </div>
     <div class="product-detail-info">
-        <h1 class="product-detail-title">{{ product.name }}</h1>
-          <div class="product-detail-description">
+        <h1 class="product-detail-title">{{ book.title }}</h1>
+        <h2 class="book-author">by {{ book.author }}</h2>
+        
+        <div class="book-details">
+            <div class="detail-section-title">Book Details</div>
+            <div class="book-metadata">
+                {% if book.isbn %}<p><strong>ISBN:</strong> {{ book.isbn }}</p>{% endif %}
+                {% if book.publisher %}<p><strong>Publisher:</strong> {{ book.publisher }}</p>{% endif %}
+                {% if book.publication_year %}<p><strong>Published:</strong> {{ book.publication_year }}</p>{% endif %}
+                {% if book.pages %}<p><strong>Pages:</strong> {{ book.pages }}</p>{% endif %}
+                {% if book.language %}<p><strong>Language:</strong> {{ book.language }}</p>{% endif %}
+                {% if book.format %}<p><strong>Format:</strong> {{ book.format }}</p>{% endif %}
+                {% if book.genre %}<p><strong>Genre:</strong> {{ book.genre }}</p>{% endif %}
+            </div>
+        </div>
+        
+        <div class="product-detail-description">
             <div class="detail-section-title">Description</div>
-            <p>{{ product.description or "No description available" }}</p>
-        </div>        <div class="delivery-info">
+            <p>{{ book.description or "No description available" }}</p>
+        </div>
+        
+        <div class="delivery-info">
             <div class="detail-section-title">Delivery Information</div>
-            {% if product.delivery_date %}
-                <p>Expected delivery: {{ product.delivery_date }} business day{{ 's' if product.delivery_date != 1 else '' }}</p>
+            {% if book.delivery_date %}
+                <p>Expected delivery: {{ book.delivery_date }} business day{{ 's' if book.delivery_date != 1 else '' }}</p>
             {% else %}
                 <p>Expected delivery: 3-5 business days</p>
             {% endif %}
             <p>Free shipping on orders over $50</p>
         </div>
 
-        {% if product.specifications %}
+        {% if book.specifications %}
         <div class="specifications">
-            <div class="detail-section-title">Specifications</div>
-            <p>{{ product.specifications }}</p>
+            <div class="detail-section-title">Additional Information</div>
+            <p>{{ book.specifications }}</p>
         </div>
         {% else %}
         <div class="specifications">
-            <div class="detail-section-title">Specifications</div>
+            <div class="detail-section-title">Additional Information</div>
             <ul>
-                <li>High-quality materials</li>
-                <li>Durable construction</li>
+                <li>New condition</li>
+                <li>100% authentic</li>
                 <li>Satisfaction guaranteed</li>
-                <li>1-year warranty included</li>
+                <li>30-day return policy</li>
             </ul>
         </div>
         {% endif %}
 
         <div class="product-actions">
-            <div class="product-price-large">${{ "%.2f"|format(product.price) }}</div>
-            <a href="{{ url_for('add_to_cart', product_id=product.id) }}" class="add-to-cart-main">🛒 Add to Cart</a>
+            <div class="product-price-large">${{ "%.2f"|format(book.price) }}</div>
+            <a href="{{ url_for('add_to_cart', book_id=book.book_id) }}" class="add-to-cart-main">🛒 Add to Cart</a>
         </div>
     </div>
 </div>
@@ -54,7 +71,7 @@
 <!-- Reviews Section -->
 <div class="reviews-section">
     <h3 class="section-title">Ratings & Reviews</h3>
-      <div class="ratings-overview">
+    <div class="ratings-overview">
         <div class="rating-summary">
             <div class="average-rating">{{ rating_data.avg_rating if rating_data.total_reviews > 0 else "No ratings" }}</div>
             <div class="rating-stars">
@@ -106,14 +123,15 @@
                 <span>{{ rating_data.rating_percentages[1] }}%</span>
             </div>
         </div>
-        {% endif %}    </div>
+        {% endif %}
+    </div>
 
     <!-- Add Review Form -->
     {% if current_user %}
         {% if not user_has_reviewed %}
         <div class="add-review-section">
-            <h4 class="review-form-title">Have used this product? Give a review about it</h4>
-            <form action="{{ url_for('add_review', product_id=product.id) }}" method="POST" class="review-form">
+            <h4 class="review-form-title">Have read this book? Give a review about it</h4>
+            <form action="{{ url_for('add_review', book_id=book.book_id) }}" method="POST" class="review-form">
                 <div class="rating-input">
                     <label>Your Rating:</label>
                     <div class="star-rating">
@@ -131,14 +149,14 @@
                 </div>
                 <div class="comment-input">
                     <label for="comment">Your Review:</label>
-                    <textarea name="comment" id="comment" placeholder="Share your experience with this product..." required></textarea>
+                    <textarea name="comment" id="comment" placeholder="Share your thoughts about this book..." required></textarea>
                 </div>
                 <button type="submit" class="submit-review-btn">Submit Review</button>
             </form>
         </div>
         {% else %}
         <div class="already-reviewed">
-            <p>✓ You have already reviewed this product.</p>
+            <p>✓ You have already reviewed this book.</p>
         </div>
         {% endif %}
     {% else %}
@@ -149,7 +167,8 @@
 
     <div class="individual-reviews">
         {% if reviews %}
-            {% for review in reviews %}            <div class="review-item">
+            {% for review in reviews %}
+            <div class="review-item">
                 <div class="review-header">
                     <div class="review-rating">
                         {% for i in range(review.rating) %}★{% endfor %}
@@ -163,7 +182,7 @@
             {% endfor %}
         {% else %}
             <div class="no-reviews">
-                <p>No reviews yet. Be the first to review this product!</p>
+                <p>No reviews yet. Be the first to review this book!</p>
             </div>
         {% endif %}
     </div>
