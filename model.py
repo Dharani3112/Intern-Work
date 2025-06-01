@@ -74,6 +74,27 @@ class CartItem(db.Model):
     quantity = db.Column(db.Integer, default=1)
     added_at = db.Column(db.DateTime, default=datetime.now(timezone.utc))
 
+class Order(db.Model):
+    __tablename__ = 'orders'
+    order_id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'))
+    order_date = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+    status = db.Column(db.String(50), default='completed')  # pending, processing, shipped, delivered, completed, cancelled
+    subtotal = db.Column(db.Numeric(10, 2))
+    delivery_charge = db.Column(db.Numeric(10, 2))
+    total_amount = db.Column(db.Numeric(10, 2))
+    shipping_address = db.Column(db.Text)
+    payment_method = db.Column(db.String(50))  # credit_card, debit_card, paypal, cash_on_delivery
+    tracking_number = db.Column(db.String(100))
+
+class OrderItem(db.Model):
+    __tablename__ = 'order_items'
+    order_item_id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(db.Integer, db.ForeignKey('orders.order_id'))
+    book_id = db.Column(db.Integer, db.ForeignKey('books.book_id'))
+    quantity = db.Column(db.Integer, nullable=False)
+    price_at_time = db.Column(db.Numeric(10, 2))  # Price when order was placed
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
