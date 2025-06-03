@@ -745,6 +745,130 @@ def admin_summary():
                          customers_with_orders=customers_with_orders,
                          top_customers=top_customers)
 
+@app.route('/admin/orders')
+@admin_required
+def admin_orders():
+    """Admin orders management page with filters"""
+    
+    # Get filter parameters
+    status_filter = request.args.get('status', 'all')
+    date_filter = request.args.get('date_range', 'all')
+    customer_filter = request.args.get('customer', '')
+    sort_by = request.args.get('sort', 'date_desc')
+    page = request.args.get('page', 1, type=int)
+    per_page = 20  # Orders per page
+    
+    # Start with base query
+    query = Order.query
+    
+    # Apply status filter
+    if status_filter != 'all':
+        query = query.filter(Order.status == status_filter)
+    
+    # Apply date range filter
+    if date_filter != 'all':
+        today = datetime.now().date()
+        if date_filter == 'today':
+            query = query.filter(db.func.date(Order.order_date) == today)
+        elif date_filter == 'week':
+            week_ago = today - timedelta(days=7)
+            query = query.filter(db.func.date(Order.order_date) >= week_ago)
+        elif date_filter == 'month':
+            month_ago = today - timedelta(days=30)
+            query = query.filter(db.func.date(Order.order_date) >= month_ago)
+        elif date_filter == 'quarter':
+            quarter_ago = today - timedelta(days=90)
+            query = query.filter(db.func.date(Order.order_date) >= quarter_ago)
+    
+    # Apply customer filter
+    if customer_filter:
+        query = query.join(User).filter(
+            User.username.contains(customer_filter) |
+            User.email.contains(customer_filter)
+        )
+    
+    # Apply sorting
+    if sort_by == 'date_desc':
+        query = query.order_by(Order.order_date.desc())
+    elif sort_by == 'date_asc':
+        query = query.order_by(Order.order_date.asc())
+    elif sort_by == 'amount_desc':
+        query = query.order_by(Order.total_amount.desc())
+    elif sort_by == 'amount_asc':
+        query = query.order_by(Order.total_amount.asc())
+    elif sort_by == 'status':
+        query = query.order_by(Order.status, Order.order_date.desc())
+    
+    # Paginate results
+    orders = query.paginate(
+        page=page, 
+        per_page=per_page, 
+        error_out=False
+    )
+    
+    # Get filter statistics
+    total_orders = Order.query.count()
+    filtered_count = query.count()
+    
+    # Order status counts for filter badges
+    status_counts = {}
+    all_statuses = db.session.query(
+        Order.status,
+        db.func.count(Order.order_id).label('count')
+    ).group_by(Order.status).all()
+    
+    for status, count in all_statuses:
+        status_counts[status] = count
+    
+    # Revenue summary for filtered results
+    filtered_orders = query.all()
+    filtered_revenue = sum(order.total_amount for order in filtered_orders)
+    
+    return render_template('admin_orders.html',
+                         orders=orders,
+                         status_filter=status_filter,
+                         date_filter=date_filter,
+                         customer_filter=customer_filter,
+                         sort_by=sort_by,
+                         total_orders=total_orders,
+                         filtered_count=filtered_count,
+                         status_counts=status_counts,
+                         filtered_revenue=filtered_revenue)
+
+@app.route('/admin/order/<int:order_id>')
+@admin_required
+def admin_order_detail(order_id):
+    """Admin order detail page"""
+    order = Order.query.get_or_404(order_id)
+    order_items = OrderItem.query.filter_by(order_id=order_id).all()
+    
+    # Add book details to order items
+    for item in order_items:
+        item.book = Book.query.get(item.book_id)
+    
+    return render_template('admin_order_detail.html',
+                         order=order,
+                         order_items=order_items)
+
+@app.route('/admin/order/<int:order_id>/update-status', methods=['POST'])
+@admin_required
+def admin_update_order_status(order_id):
+    """Update order status"""
+    order = Order.query.get_or_404(order_id)
+    new_status = request.form.get('status')
+    
+    if new_status in ['pending', 'processing', 'shipped', 'delivered', 'completed', 'cancelled']:
+        order.status = new_status
+        
+        # Update delivery date for completed/delivered orders
+        if new_status in ['completed', 'delivered'] and not order.delivery_date:
+            order.delivery_date = datetime.now()
+        
+        db.session.commit()
+        return jsonify({'success': True, 'message': f'Order status updated to {new_status}'})
+    
+    return jsonify({'success': False, 'message': 'Invalid status'})
+
 @app.route('/admin/book/add', methods=['GET', 'POST'])
 @admin_required
 def admin_add_book():

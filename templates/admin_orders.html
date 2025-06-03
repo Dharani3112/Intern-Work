@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block title %}Orders Management - Admin{% endblock %}
+
+{% block content %}
+<div class="admin-orders">
+    <h2 class="section-title">Orders Management</h2>
+    <p class="admin-subtitle">Manage all customer orders with advanced filtering</p>
+
+    <div class="admin-actions">
+        <a href="{{ url_for('admin_dashboard') }}" class="view-product-btn admin-btn">
+            📚 Manage Books
+        </a>
+        <a href="{{ url_for('admin_summary') }}" class="view-product-btn admin-btn">
+            📊 View Analytics
+        </a>
+        <a href="{{ url_for('index') }}" class="view-product-btn admin-btn">
+            🏠 Back to Store
+        </a>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="orders-filters">
+        <h3>🔍 Filter Orders</h3>
+        
+        <form method="GET" class="filter-form">
+            <div class="filter-row">
+                <!-- Status Filter -->
+                <div class="filter-group">
+                    <label for="status">Status:</label>
+                    <select name="status" id="status" class="filter-select">
+                        <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Statuses</option>
+                        <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>
+                            Pending {% if status_counts.get('pending') %}({{ status_counts.pending }}){% endif %}
+                        </option>
+                        <option value="processing" {% if status_filter == 'processing' %}selected{% endif %}>
+                            Processing {% if status_counts.get('processing') %}({{ status_counts.processing }}){% endif %}
+                        </option>
+                        <option value="shipped" {% if status_filter == 'shipped' %}selected{% endif %}>
+                            Shipped {% if status_counts.get('shipped') %}({{ status_counts.shipped }}){% endif %}
+                        </option>
+                        <option value="delivered" {% if status_filter == 'delivered' %}selected{% endif %}>
+                            Delivered {% if status_counts.get('delivered') %}({{ status_counts.delivered }}){% endif %}
+                        </option>
+                        <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>
+                            Completed {% if status_counts.get('completed') %}({{ status_counts.completed }}){% endif %}
+                        </option>
+                        <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>
+                            Cancelled {% if status_counts.get('cancelled') %}({{ status_counts.cancelled }}){% endif %}
+                        </option>
+                    </select>
+                </div>
+
+                <!-- Date Range Filter -->
+                <div class="filter-group">
+                    <label for="date_range">Date Range:</label>
+                    <select name="date_range" id="date_range" class="filter-select">
+                        <option value="all" {% if date_filter == 'all' %}selected{% endif %}>All Time</option>
+                        <option value="today" {% if date_filter == 'today' %}selected{% endif %}>Today</option>
+                        <option value="week" {% if date_filter == 'week' %}selected{% endif %}>Last 7 Days</option>
+                        <option value="month" {% if date_filter == 'month' %}selected{% endif %}>Last 30 Days</option>
+                        <option value="quarter" {% if date_filter == 'quarter' %}selected{% endif %}>Last 90 Days</option>
+                    </select>
+                </div>
+
+                <!-- Customer Search -->
+                <div class="filter-group">
+                    <label for="customer">Customer:</label>
+                    <input type="text" name="customer" id="customer" value="{{ customer_filter }}" 
+                           placeholder="Search by name or email" class="filter-input">
+                </div>
+
+                <!-- Sort By -->
+                <div class="filter-group">
+                    <label for="sort">Sort By:</label>
+                    <select name="sort" id="sort" class="filter-select">
+                        <option value="date_desc" {% if sort_by == 'date_desc' %}selected{% endif %}>Newest First</option>
+                        <option value="date_asc" {% if sort_by == 'date_asc' %}selected{% endif %}>Oldest First</option>
+                        <option value="amount_desc" {% if sort_by == 'amount_desc' %}selected{% endif %}>Highest Amount</option>
+                        <option value="amount_asc" {% if sort_by == 'amount_asc' %}selected{% endif %}>Lowest Amount</option>
+                        <option value="status" {% if sort_by == 'status' %}selected{% endif %}>By Status</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="filter-actions">
+                <button type="submit" class="add-to-cart-btn">🔍 Apply Filters</button>
+                <a href="{{ url_for('admin_orders') }}" class="view-product-btn">🔄 Clear All</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="orders-summary">
+        <div class="summary-stats">
+            <div class="stat-item">
+                <span class="stat-value">{{ filtered_count }}</span>
+                <span class="stat-label">Orders Found</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value">${{ "%.2f"|format(filtered_revenue) }}</span>
+                <span class="stat-label">Total Revenue</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value">${{ "%.2f"|format(filtered_revenue / filtered_count if filtered_count > 0 else 0) }}</span>
+                <span class="stat-label">Avg Order Value</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Orders Table -->
+    {% if orders.items %}
+    <div class="orders-table-container">
+        <table class="orders-table">
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Customer</th>
+                    <th>Date</th>
+                    <th>Items</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Payment</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders.items %}
+                <tr class="order-row">
+                    <td class="order-id">
+                        <strong>#{{ order.order_id }}</strong>
+                        {% if order.tracking_number %}
+                            <br><small>{{ order.tracking_number }}</small>
+                        {% endif %}
+                    </td>
+                    <td class="customer-info">
+                        {% if order.user %}
+                            <div class="customer-name">{{ order.user.username }}</div>
+                            <div class="customer-email">{{ order.user.email }}</div>
+                        {% else %}
+                            <div class="customer-name">Guest User</div>
+                        {% endif %}
+                    </td>
+                    <td class="order-date">
+                        <div class="date-primary">{{ order.order_date.strftime('%Y-%m-%d') }}</div>
+                        <div class="date-time">{{ order.order_date.strftime('%H:%M') }}</div>
+                    </td>
+                    <td class="order-items">
+                        {% set order_items = order.order_items %}
+                        {{ order_items|length }} item{{ 's' if order_items|length != 1 else '' }}
+                        {% if order_items|length > 0 %}
+                            <br><small>{{ order_items|sum(attribute='quantity') }} books</small>
+                        {% endif %}
+                    </td>
+                    <td class="order-amount">
+                        <div class="amount-total">${{ "%.2f"|format(order.total_amount) }}</div>
+                        {% if order.subtotal %}
+                            <small>Subtotal: ${{ "%.2f"|format(order.subtotal) }}</small>
+                        {% endif %}
+                    </td>
+                    <td class="order-status">
+                        <span class="status-badge status-{{ order.status }}">
+                            {{ order.status.title() }}
+                        </span>
+                        
+                        <!-- Quick Status Update -->
+                        <div class="status-update">
+                            <select class="status-select" data-order-id="{{ order.order_id }}" onchange="updateOrderStatus({{ order.order_id }}, this.value)">
+                                <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>Pending</option>
+                                <option value="processing" {% if order.status == 'processing' %}selected{% endif %}>Processing</option>
+                                <option value="shipped" {% if order.status == 'shipped' %}selected{% endif %}>Shipped</option>
+                                <option value="delivered" {% if order.status == 'delivered' %}selected{% endif %}>Delivered</option>
+                                <option value="completed" {% if order.status == 'completed' %}selected{% endif %}>Completed</option>
+                                <option value="cancelled" {% if order.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                            </select>
+                        </div>
+                    </td>
+                    <td class="payment-info">
+                        {{ order.payment_method.title() if order.payment_method else 'N/A' }}
+                    </td>
+                    <td class="order-actions">
+                        <a href="{{ url_for('admin_order_detail', order_id=order.order_id) }}" 
+                           class="view-product-btn action-btn-small" title="View Details">
+                            👁️ View
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if orders.pages > 1 %}
+    <div class="pagination">
+        {% if orders.has_prev %}
+            <a href="{{ url_for('admin_orders', page=orders.prev_num, status=status_filter, date_range=date_filter, customer=customer_filter, sort=sort_by) }}" 
+               class="view-product-btn">« Previous</a>
+        {% endif %}
+        
+        <span class="page-info">
+            Page {{ orders.page }} of {{ orders.pages }} ({{ orders.total }} total orders)
+        </span>
+        
+        {% if orders.has_next %}
+            <a href="{{ url_for('admin_orders', page=orders.next_num, status=status_filter, date_range=date_filter, customer=customer_filter, sort=sort_by) }}" 
+               class="view-product-btn">Next »</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="empty-state">
+        <h3>No Orders Found</h3>
+        <p>No orders match your current filters. Try adjusting your search criteria.</p>
+        <a href="{{ url_for('admin_orders') }}" class="add-to-cart-btn">Clear All Filters</a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function updateOrderStatus(orderId, newStatus) {
+    if (confirm(`Are you sure you want to change the order status to ${newStatus}?`)) {
+        fetch(`/admin/order/${orderId}/update-status`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `status=${newStatus}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update the status badge
+                const statusBadge = document.querySelector(`tr:has([data-order-id="${orderId}"]) .status-badge`);
+                if (statusBadge) {
+                    statusBadge.className = `status-badge status-${newStatus}`;
+                    statusBadge.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+                }
+                alert(data.message);
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while updating the order status.');
+        });
+    }
+}
+</script>
+{% endblock %}

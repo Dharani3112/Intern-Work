@@ -7,9 +7,11 @@
     <h2 class="section-title">Admin Summary Dashboard</h2>
     <p class="admin-subtitle">Comprehensive overview of your bookstore performance</p>
 
-    <div class="admin-actions">
-        <a href="{{ url_for('admin_dashboard') }}" class="view-product-btn admin-btn">
+    <div class="admin-actions">        <a href="{{ url_for('admin_dashboard') }}" class="view-product-btn admin-btn">
             📚 Manage Books
+        </a>
+        <a href="{{ url_for('admin_orders') }}" class="view-product-btn admin-btn">
+            📦 Manage Orders
         </a>
         <a href="{{ url_for('index') }}" class="view-product-btn admin-btn">
             🏠 Back to Store
