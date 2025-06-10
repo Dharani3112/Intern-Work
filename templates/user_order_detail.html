@@ -1,0 +1,459 @@
+{% extends "base.html" %}
+
+{% block title %}Order #{{ order.order_id }} - Bookstore{% endblock %}
+
+{% block content %}
+<div class="order-detail-page">
+    <div class="order-header">
+        <div class="header-info">
+            <h2 class="order-title">Order #{{ order.order_id }}</h2>
+            <p class="order-date">Placed on {{ order.order_date.strftime('%B %d, %Y at %I:%M %p') if order.order_date else 'Date not available' }}</p>
+        </div>
+        <div class="header-actions">
+            <a href="{{ url_for('user_orders') }}" class="view-product-btn">← Back to Orders</a>
+        </div>
+    </div>
+
+    <div class="order-content">
+        <!-- Order Status and Summary -->
+        <div class="order-status-section">
+            <div class="status-card">
+                <div class="status-info">
+                    <h3>Order Status</h3>
+                    <span class="status-badge status-{{ order.status }}">
+                        {{ order.status.title() }}
+                    </span>
+                    {% if order.status == 'delivered' %}
+                        <p class="status-message">✅ Your order has been delivered successfully!</p>
+                    {% elif order.status == 'shipped' %}
+                        <p class="status-message">🚚 Your order is on its way!</p>
+                    {% elif order.status == 'processing' %}
+                        <p class="status-message">⏳ We're preparing your order for shipment.</p>
+                    {% elif order.status == 'pending' %}
+                        <p class="status-message">📋 Your order is being processed.</p>
+                    {% elif order.status == 'cancelled' %}
+                        <p class="status-message">❌ This order has been cancelled.</p>
+                    {% endif %}
+                </div>
+                <div class="order-total-display">
+                    <h3>Order Total</h3>
+                    <p class="total-amount">${{ "%.2f"|format(order.total_amount) }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Items -->
+        <div class="order-items-section">
+            <h3>Items Ordered</h3>
+            <div class="items-list">
+                {% for item in order_items %}
+                <div class="order-item">
+                    <div class="item-image">
+                        {% if item.book and item.book.image_url %}
+                            <img src="{{ item.book.image_url }}" alt="{{ item.book.title }}" />
+                        {% else %}
+                            <div class="placeholder-image">📚</div>
+                        {% endif %}
+                    </div>
+                    <div class="item-details">
+                        <h4 class="item-title">{{ item.book.title if item.book else 'Book not found' }}</h4>
+                        <p class="item-author">by {{ item.book.author if item.book else 'Unknown Author' }}</p>
+                        <div class="item-meta">
+                            {% if item.book and item.book.isbn %}
+                                <span class="isbn">ISBN: {{ item.book.isbn }}</span>
+                            {% endif %}
+                            {% if item.book and item.book.format %}
+                                <span class="format">{{ item.book.format }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="item-pricing">
+                        <p class="item-price">${{ "%.2f"|format(item.price_at_time) }}</p>
+                        <p class="item-quantity">Qty: {{ item.quantity }}</p>
+                        <p class="item-total">${{ "%.2f"|format(item.price_at_time * item.quantity) }}</p>
+                    </div>
+                    <div class="item-actions">
+                        {% if item.book %}
+                            <a href="{{ url_for('book_detail', book_id=item.book.book_id) }}" 
+                               class="view-product-btn">View Book</a>
+                            {% if order.status in ['delivered', 'completed'] %}
+                                <a href="{{ url_for('book_detail', book_id=item.book.book_id) }}#review" 
+                                   class="add-to-cart-btn btn-small">Write Review</a>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Shipping Information -->
+        {% if order.shipping_address %}
+        <div class="shipping-section">
+            <h3>Shipping Information</h3>
+            <div class="shipping-card">
+                <div class="shipping-address">
+                    <h4>Delivery Address</h4>
+                    <p>{{ order.shipping_address }}</p>
+                </div>
+                {% if order.payment_method %}
+                <div class="payment-info">
+                    <h4>Payment Method</h4>
+                    <p>{{ order.payment_method.title() }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Order Timeline -->
+        <div class="order-timeline">
+            <h3>Order Timeline</h3>
+            <div class="timeline">
+                <div class="timeline-item completed">
+                    <div class="timeline-icon">📋</div>
+                    <div class="timeline-content">
+                        <h4>Order Placed</h4>
+                        <p>{{ order.order_date.strftime('%B %d, %Y at %I:%M %p') if order.order_date else 'Date not available' }}</p>
+                    </div>
+                </div>
+                
+                {% if order.status in ['processing', 'shipped', 'delivered', 'completed'] %}
+                <div class="timeline-item completed">
+                    <div class="timeline-icon">⏳</div>
+                    <div class="timeline-content">
+                        <h4>Processing</h4>
+                        <p>Your order is being prepared</p>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if order.status in ['shipped', 'delivered', 'completed'] %}
+                <div class="timeline-item completed">
+                    <div class="timeline-icon">🚚</div>
+                    <div class="timeline-content">
+                        <h4>Shipped</h4>
+                        <p>Your order is on its way</p>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if order.status in ['delivered', 'completed'] %}
+                <div class="timeline-item completed">
+                    <div class="timeline-icon">✅</div>
+                    <div class="timeline-content">
+                        <h4>Delivered</h4>
+                        <p>Order delivered successfully</p>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if order.status == 'cancelled' %}
+                <div class="timeline-item cancelled">
+                    <div class="timeline-icon">❌</div>
+                    <div class="timeline-content">
+                        <h4>Cancelled</h4>
+                        <p>This order was cancelled</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.order-detail-page {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.order-title {
+    margin: 0 0 0.5rem 0;
+    color: #2c3e50;
+}
+
+.order-date {
+    margin: 0;
+    color: #7f8c8d;
+}
+
+.order-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.status-card {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.status-info h3, .order-total-display h3 {
+    margin: 0 0 1rem 0;
+    color: #2c3e50;
+}
+
+.status-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    display: inline-block;
+}
+
+.status-message {
+    margin: 1rem 0 0 0;
+    color: #7f8c8d;
+}
+
+.total-amount {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #27ae60;
+    margin: 0;
+}
+
+.order-items-section {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.order-items-section h3 {
+    margin: 0 0 1.5rem 0;
+    color: #2c3e50;
+}
+
+.order-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.order-item:last-child {
+    border-bottom: none;
+}
+
+.item-image {
+    width: 80px;
+    height: 100px;
+    flex-shrink: 0;
+}
+
+.item-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.placeholder-image {
+    width: 100%;
+    height: 100%;
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    font-size: 2rem;
+}
+
+.item-details {
+    flex: 1;
+}
+
+.item-title {
+    margin: 0 0 0.5rem 0;
+    color: #2c3e50;
+    font-size: 1.1rem;
+}
+
+.item-author {
+    margin: 0 0 0.5rem 0;
+    color: #7f8c8d;
+}
+
+.item-meta {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.9rem;
+    color: #95a5a6;
+}
+
+.item-pricing {
+    text-align: right;
+    min-width: 120px;
+}
+
+.item-price {
+    margin: 0 0 0.25rem 0;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+.item-quantity {
+    margin: 0 0 0.25rem 0;
+    color: #7f8c8d;
+    font-size: 0.9rem;
+}
+
+.item-total {
+    margin: 0;
+    font-weight: bold;
+    color: #27ae60;
+}
+
+.item-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 120px;
+}
+
+.btn-small {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+}
+
+.shipping-section {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.shipping-section h3 {
+    margin: 0 0 1.5rem 0;
+    color: #2c3e50;
+}
+
+.shipping-card {
+    display: flex;
+    gap: 2rem;
+}
+
+.shipping-address, .payment-info {
+    flex: 1;
+}
+
+.shipping-address h4, .payment-info h4 {
+    margin: 0 0 0.5rem 0;
+    color: #2c3e50;
+}
+
+.shipping-address p, .payment-info p {
+    margin: 0;
+    color: #7f8c8d;
+}
+
+.order-timeline {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.order-timeline h3 {
+    margin: 0 0 1.5rem 0;
+    color: #2c3e50;
+}
+
+.timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.timeline-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.5rem 0;
+}
+
+.timeline-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.timeline-item.completed .timeline-icon {
+    background: #d4edda;
+    color: #155724;
+}
+
+.timeline-item.cancelled .timeline-icon {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.timeline-content h4 {
+    margin: 0 0 0.25rem 0;
+    color: #2c3e50;
+}
+
+.timeline-content p {
+    margin: 0;
+    color: #7f8c8d;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+    .order-header {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .status-card {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .order-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .item-actions {
+        flex-direction: row;
+        width: 100%;
+    }
+    
+    .shipping-card {
+        flex-direction: column;
+        gap: 1rem;
+    }
+}
+</style>
+{% endblock %}

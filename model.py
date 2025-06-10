@@ -2,10 +2,20 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timezone
 from flask_bcrypt import Bcrypt
+from dotenv import load_dotenv
+import os
+
+# Load environment variables
+load_dotenv()
 
 app = Flask(__name__)
-# Using SQLite for testing instead of MySQL
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///shopping_site.db'
+
+# Database Configuration - MySQL Only
+database_uri = os.environ.get('SQLALCHEMY_DATABASE_URI')
+if not database_uri:
+    raise ValueError("SQLALCHEMY_DATABASE_URI environment variable is required for MySQL connection")
+
+app.config['SQLALCHEMY_DATABASE_URI'] = database_uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)

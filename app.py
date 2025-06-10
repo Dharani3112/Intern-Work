@@ -6,14 +6,22 @@ from flask_cors import CORS
 import os
 from datetime import datetime, timezone, timedelta
 from functools import wraps
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Import models
 from model import db, User, Book, BookImage, Review, CartItem, Order, OrderItem, app as model_app
 
 app = Flask(__name__)
 
-# Configurations - Using SQLite for testing
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///shopping_site.db'
+# Database Configuration - MySQL Only
+database_uri = os.environ.get('SQLALCHEMY_DATABASE_URI')
+if not database_uri:
+    raise ValueError("SQLALCHEMY_DATABASE_URI environment variable is required for MySQL connection")
+
+app.config['SQLALCHEMY_DATABASE_URI'] = database_uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config["JWT_SECRET_KEY"] = os.environ.get('JWT_SECRET_KEY', "your-super-secret-jwt-key")
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
@@ -1062,8 +1070,7 @@ def add_review(book_id):
     
     # Create new review
     new_review = Review(
-        user_id=current_user.user_id,
-        book_id=book_id,
+        user_id=current_user.user_id,        book_id=book_id,
         rating=rating,
         description=comment,
         created_at=datetime.now()
@@ -1077,6 +1084,68 @@ def add_review(book_id):
         print(f"Error adding review: {e}")
     
     return redirect(url_for('book_detail', book_id=book_id))
+
+@app.route('/my-orders')
+@login_required
+def user_orders():
+    """User order history page"""
+    current_user = get_current_user()
+    
+    # Get user's orders with pagination
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
+    
+    orders = Order.query.filter_by(user_id=current_user.user_id)\
+                       .order_by(Order.order_date.desc())\
+                       .paginate(page=page, per_page=per_page, error_out=False)
+    
+    # Get order items for each order
+    orders_with_items = []
+    for order in orders.items:
+        order_items = OrderItem.query.filter_by(order_id=order.order_id).all()
+        
+        # Add book details to each order item
+        for item in order_items:
+            item.book = Book.query.get(item.book_id)
+            if item.book:
+                item.book.image_url = get_main_image_url(item.book_id)
+        
+        orders_with_items.append({
+            'order': order,
+            'items': order_items,
+            'item_count': len(order_items),
+            'total_items': sum(item.quantity for item in order_items)
+        })
+    
+    return render_template('user_orders.html', 
+                         orders_data=orders_with_items,
+                         orders_pagination=orders,
+                         current_user=current_user)
+
+@app.route('/order/<int:order_id>')
+@login_required
+def user_order_detail(order_id):
+    """Individual order detail page for users"""
+    current_user = get_current_user()
+    
+    # Get order (ensure it belongs to current user)
+    order = Order.query.filter_by(order_id=order_id, user_id=current_user.user_id).first()
+    if not order:
+        return redirect(url_for('user_orders'))
+    
+    # Get order items
+    order_items = OrderItem.query.filter_by(order_id=order_id).all()
+    
+    # Add book details and images to each order item
+    for item in order_items:
+        item.book = Book.query.get(item.book_id)
+        if item.book:
+            item.book.image_url = get_main_image_url(item.book_id)
+    
+    return render_template('user_order_detail.html',
+                         order=order,
+                         order_items=order_items,
+                         current_user=current_user)
 
 if __name__ == '__main__':
     with app.app_context():

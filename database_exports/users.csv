@@ -1,0 +1,16 @@
+user_id,username,email,first_name,last_name,mobile_number
+1,john_reader,john@example.com,John,Smith,+1-555-0101
+2,book_lover,sarah@example.com,Sarah,Johnson,+1-555-0102
+3,literature_fan,mike@example.com,Michael,Brown,+1-555-0103
+4,novel_enthusiast,emily@example.com,Emily,Davis,+1-555-0104
+5,story_seeker,david@example.com,David,Wilson,+1-555-0105
+6,page_turner,lisa@example.com,Lisa,Anderson,+1-555-0106
+7,fiction_finder,robert@example.com,Robert,Taylor,+1-555-0107
+8,chapter_chaser,jennifer@example.com,Jennifer,Martinez,+1-555-0108
+9,word_wanderer,william@example.com,William,Garcia,+1-555-0109
+10,text_traveler,jessica@example.com,Jessica,Rodriguez,+1-555-0110
+11,prose_pioneer,james@example.com,James,Lee,+1-555-0111
+12,manuscript_maven,mary@example.com,Mary,White,+1-555-0112
+13,library_lover,christopher@example.com,Christopher,Harris,+1-555-0113
+14,bookmark_buddy,amanda@example.com,Amanda,Clark,+1-555-0114
+15,reading_rebel,matthew@example.com,Matthew,Lewis,+1-555-0115

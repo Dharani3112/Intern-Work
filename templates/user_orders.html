@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+
+{% block title %}My Orders - Bookstore{% endblock %}
+
+{% block content %}
+<div class="user-orders-page">
+    <h2 class="section-title">My Order History</h2>
+    <p class="page-subtitle">Track your purchases and order status</p>
+
+    {% if orders_data %}
+        <div class="orders-summary">
+            <div class="summary-card">
+                <h3>{{ orders_pagination.total }}</h3>
+                <p>Total Orders</p>
+            </div>
+        </div>
+
+        <div class="orders-list">
+            {% for order_data in orders_data %}
+            <div class="order-card">
+                <div class="order-header">
+                    <div class="order-info">
+                        <h3 class="order-number">Order #{{ order_data.order.order_id }}</h3>
+                        <p class="order-date">{{ order_data.order.order_date.strftime('%B %d, %Y at %I:%M %p') if order_data.order.order_date else 'Date not available' }}</p>
+                    </div>
+                    <div class="order-status">
+                        <span class="status-badge status-{{ order_data.order.status }}">
+                            {{ order_data.order.status.title() }}
+                        </span>
+                        <p class="order-total">${{ "%.2f"|format(order_data.order.total_amount) }}</p>
+                    </div>
+                </div>
+
+                <div class="order-items-preview">
+                    {% for item in order_data.items[:3] %}
+                    <div class="order-item-mini">
+                        <div class="item-image">
+                            {% if item.book and item.book.image_url %}
+                                <img src="{{ item.book.image_url }}" alt="{{ item.book.title if item.book else 'Book' }}" />
+                            {% else %}
+                                <div class="placeholder-image">📚</div>
+                            {% endif %}
+                        </div>
+                        <div class="item-info">
+                            <p class="item-title">{{ item.book.title if item.book else 'Book not found' }}</p>
+                            <p class="item-quantity">Qty: {{ item.quantity }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    {% if order_data.item_count > 3 %}
+                    <div class="more-items">
+                        <p>and {{ order_data.item_count - 3 }} more item{{ 's' if order_data.item_count - 3 != 1 else '' }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="order-footer">
+                    <div class="order-summary">
+                        <span>{{ order_data.total_items }} item{{ 's' if order_data.total_items != 1 else '' }}</span>
+                        {% if order_data.order.status == 'delivered' %}
+                            <span class="delivery-info">✅ Delivered</span>
+                        {% elif order_data.order.status == 'shipped' %}
+                            <span class="delivery-info">🚚 Shipped</span>
+                        {% elif order_data.order.status == 'processing' %}
+                            <span class="delivery-info">⏳ Processing</span>
+                        {% endif %}
+                    </div>
+                    <div class="order-actions">
+                        <a href="{{ url_for('user_order_detail', order_id=order_data.order.order_id) }}" 
+                           class="view-product-btn">View Details</a>
+                        {% if order_data.order.status in ['delivered', 'completed'] %}
+                            <a href="{{ url_for('user_order_detail', order_id=order_data.order.order_id) }}#review" 
+                               class="add-to-cart-btn">Write Review</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if orders_pagination.pages > 1 %}
+        <div class="pagination">
+            {% if orders_pagination.has_prev %}
+                <a href="{{ url_for('user_orders', page=orders_pagination.prev_num) }}" 
+                   class="view-product-btn">« Previous</a>
+            {% endif %}
+            
+            <span class="page-info">
+                Page {{ orders_pagination.page }} of {{ orders_pagination.pages }}
+            </span>
+            
+            {% if orders_pagination.has_next %}
+                <a href="{{ url_for('user_orders', page=orders_pagination.next_num) }}" 
+                   class="view-product-btn">Next »</a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+    {% else %}
+        <div class="empty-orders">
+            <div class="empty-icon">📦</div>
+            <h3>No Orders Yet</h3>
+            <p>You haven't placed any orders yet. Start shopping to see your order history here!</p>
+            <a href="{{ url_for('index') }}" class="add-to-cart-btn">Start Shopping</a>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.user-orders-page {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.orders-summary {
+    margin-bottom: 2rem;
+}
+
+.summary-card {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    text-align: center;
+    display: inline-block;
+}
+
+.summary-card h3 {
+    font-size: 2rem;
+    color: #2c3e50;
+    margin: 0;
+}
+
+.summary-card p {
+    margin: 0.5rem 0 0 0;
+    color: #7f8c8d;
+}
+
+.order-card {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 1.5rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.order-number {
+    margin: 0 0 0.5rem 0;
+    color: #2c3e50;
+    font-size: 1.2rem;
+}
+
+.order-date {
+    margin: 0;
+    color: #7f8c8d;
+    font-size: 0.9rem;
+}
+
+.status-badge {
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.status-pending { background: #ffeaa7; color: #d63031; }
+.status-processing { background: #74b9ff; color: white; }
+.status-shipped { background: #00b894; color: white; }
+.status-delivered { background: #00b894; color: white; }
+.status-completed { background: #00b894; color: white; }
+.status-cancelled { background: #fab1a0; color: #d63031; }
+
+.order-total {
+    margin: 0.5rem 0 0 0;
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.order-items-preview {
+    padding: 1rem 1.5rem;
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.order-item-mini {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+    min-width: 200px;
+}
+
+.item-image {
+    width: 40px;
+    height: 50px;
+    flex-shrink: 0;
+}
+
+.item-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.placeholder-image {
+    width: 100%;
+    height: 100%;
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    font-size: 1.2rem;
+}
+
+.item-title {
+    margin: 0;
+    font-weight: 500;
+    color: #2c3e50;
+    font-size: 0.9rem;
+    line-height: 1.2;
+}
+
+.item-quantity {
+    margin: 0;
+    color: #7f8c8d;
+    font-size: 0.8rem;
+}
+
+.more-items {
+    display: flex;
+    align-items: center;
+    color: #7f8c8d;
+    font-style: italic;
+}
+
+.order-footer {
+    padding: 1rem 1.5rem;
+    background: #f8f9fa;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.order-summary {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.delivery-info {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.order-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.empty-orders {
+    text-align: center;
+    padding: 4rem 2rem;
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+.empty-orders h3 {
+    color: #2c3e50;
+    margin-bottom: 1rem;
+}
+
+.empty-orders p {
+    color: #7f8c8d;
+    margin-bottom: 2rem;
+}
+
+@media (max-width: 768px) {
+    .order-header {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .order-footer {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+    
+    .order-actions {
+        justify-content: center;
+    }
+    
+    .order-item-mini {
+        min-width: 100%;
+    }
+}
+</style>
+{% endblock %}

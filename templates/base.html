@@ -13,15 +13,16 @@
             <a href="{{ url_for('index') }}" class="logo">Bookstore</a>            <div class="search-container">
                 <form action="{{ url_for('search') }}" method="GET">
                     <input type="text" name="q" class="search-bar" placeholder="Search books..." value="{{ request.args.get('q', '') }}">
-                </form>
-            </div>
+                </form>            </div>
             <div class="header-actions">
                 <a href="{{ url_for('cart') }}" class="cart-btn">
                     🛒 My Cart 
                     {% if session.cart %}
                         ({{ session.cart|length }})
                     {% endif %}
-                </a>                {% if session.user_id %}
+                </a>
+                {% if session.user_id %}
+                    <a href="{{ url_for('user_orders') }}" class="orders-btn">📦 My Orders</a>
                     <span class="user-greeting">👤 {{ session.username }}</span>
                     <a href="{{ url_for('web_logout') }}" class="logout-btn">Logout</a>
                 {% else %}

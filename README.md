@@ -80,19 +80,44 @@ Werkzeug==3.0.1
 
 ## 🗄️ Database Configuration
 
-- **Database**: SQLite with SQLAlchemy ORM
-- **Connection**: `sqlite:///shopping_site.db`
-- **Location**: `instance/shopping_site.db`
+- **Database**: MySQL (recommended) or SQLite (for development)
+- **ORM**: SQLAlchemy 
+- **Connection**: Configured via environment variables
 - **Features**: Foreign key relationships, constraints, timestamps
-- **Models**: User, Product, ProductImage, Review, CartItem
+- **Models**: User, Book, BookImage, Review, CartItem, Order, OrderItem
+
+### Database Setup
+
+#### Option 1: MySQL (Recommended for Production)
+1. Install MySQL server
+2. Configure environment variables in `.env`:
+   ```
+   SQLALCHEMY_DATABASE_URI=mysql+pymysql://bookstore_user:password@localhost:3306/bookstore_db
+   MYSQL_HOST=localhost
+   MYSQL_PORT=3306
+   MYSQL_DATABASE=bookstore_db
+   MYSQL_USERNAME=bookstore_user
+   MYSQL_PASSWORD=your_secure_password
+   ```
+3. Run setup script: `python setup_mysql.py`
+4. Migrate existing data: `python migrate_to_mysql.py`
+
+#### Option 2: SQLite (Development Only)
+1. Configure environment variables in `.env`:
+   ```
+   SQLALCHEMY_DATABASE_URI=sqlite:///shopping_site.db
+   ```
+2. Database will be created automatically at `instance/shopping_site.db`
 
 ### Database Models
 
 1. **User**: User accounts with authentication
-2. **Product**: Product catalog with pricing and inventory
-3. **ProductImage**: Product images with main/secondary designation
-4. **Review**: Product reviews with ratings and comments
+2. **Book**: Book catalog with pricing and inventory
+3. **BookImage**: Book images with main/secondary designation  
+4. **Review**: Book reviews with ratings and comments
 5. **CartItem**: Shopping cart items for logged-in users
+6. **Order**: Customer orders with status tracking
+7. **OrderItem**: Individual items within orders
 
 ## 📁 Project Structure
 
@@ -209,16 +234,49 @@ flask-ecommerce/
 ## 🔧 Configuration
 
 ### Environment Variables
+Create a `.env` file in the project root:
+
 ```bash
+# Database Configuration (Choose one)
+# For MySQL (Recommended):
+SQLALCHEMY_DATABASE_URI=mysql+pymysql://bookstore_user:password@localhost:3306/bookstore_db
+MYSQL_HOST=localhost
+MYSQL_PORT=3306
+MYSQL_DATABASE=bookstore_db
+MYSQL_USERNAME=bookstore_user
+MYSQL_PASSWORD=your_secure_password
+
+# For SQLite (Development):
+# SQLALCHEMY_DATABASE_URI=sqlite:///shopping_site.db
+
+# Application Keys
 JWT_SECRET_KEY=your-super-secret-jwt-key
 SECRET_KEY=your-secret-key-for-sessions
 ```
 
-### Database Configuration
-```python
-SQLALCHEMY_DATABASE_URI = 'sqlite:///shopping_site.db'
-SQLALCHEMY_TRACK_MODIFICATIONS = False
-```
+### Database Migration
+
+If migrating from SQLite to MySQL:
+
+1. **Setup MySQL database:**
+   ```bash
+   python setup_mysql.py
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Migrate existing data:**
+   ```bash
+   python migrate_to_mysql.py
+   ```
+
+4. **Verify migration:**
+   ```bash
+   python check_database.py
+   ```
 
 ## 🧪 Testing
 

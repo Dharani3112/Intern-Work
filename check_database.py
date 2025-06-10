@@ -2,18 +2,34 @@
 """
 Database Verification Script
 Checks if 100 books and order histories are present in the bookstore database
+Now supports both SQLite and MySQL databases
 """
 
 from app import app
 from model import db, User, Book, Order, OrderItem, Review, BookImage
 from sqlalchemy import func
 from datetime import datetime, timedelta
+import os
+
+def get_database_type():
+    """Determine which database type is being used"""
+    db_uri = app.config.get('SQLALCHEMY_DATABASE_URI', '')
+    if db_uri.startswith('mysql'):
+        return 'MySQL'
+    elif db_uri.startswith('sqlite'):
+        return 'SQLite'
+    else:
+        return 'Unknown'
 
 def check_database_contents():
     """Check and display database statistics"""
     
     with app.app_context():
+        db_type = get_database_type()
         print("🔍 BOOKSTORE DATABASE VERIFICATION")
+        print("=" * 50)
+        print(f"📊 Database Type: {db_type}")
+        print(f"🔗 Database URI: {app.config['SQLALCHEMY_DATABASE_URI']}")
         print("=" * 50)
         
         # Check Books
